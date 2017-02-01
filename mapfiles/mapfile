@@ -1,0 +1,24 @@
+# this file was manually generated
+# person: jtlee
+# date: 01/13/94
+# time: 10:28:00
+# note - only certain combinations are excepted such as
+# TomoOrig, Scale & RelRot
+# AC, PC, Width & Height
+# Front, Back, Width & Height
+#
+#AC(pixels)=(63.5,68.13365,20.185)
+#PC(pixels)=(63.5,60.1447,20.185)
+#Front(mm)=(198.712,284.212,68.125)
+#Back(mm)=(198.712,113.812,68.125)
+#Front(pixels)=(70,106,44)
+#Back(pixels)=(65,54,30)
+#Width(pixels)=38.7
+#Height(pixels)=46.2
+#YRotation(deg)=10
+#
+#this mapfile is valid for corrected images output from Satoshi software
+#y origin = 63.5-[(172(tal width)/2 - 70(acpc dist) (mm)/2.25 (mm/pixel)]
+TomoOrig(pixels)=(63.5,56.39,32)
+Scale=(-1,-1,1)
+RelRot(deg)=(0,0,0)
