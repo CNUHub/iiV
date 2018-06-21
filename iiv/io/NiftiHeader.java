@@ -18,7 +18,10 @@ public class NiftiHeader {
   private Object localLock = new Object();
   private CNUFile cnufile;
   private CNUDataConversions cnuDataConv = new CNUDataConversions();
+  private CNUDimensions cnuDims = null;
   private nifti_1_header n1h = null;
+  private NiftiQFormCoordinateMap qformcoormap = null;
+  private NiftiSFormCoordinateMap sformcoormap = null;
   /**
    * Constructs an new instance of NiftiHeader leaving fields empty.
    *
@@ -218,25 +221,50 @@ public class NiftiHeader {
    * @return	a copy of dimensions for this analyze file
    */
   public CNUDimensions getDimensions() {
-    CNUDimensions lsize = new CNUDimensions();
-    synchronized (localLock) {
-      int[] dims = new int[n1h.dim[0]];
-      double[] ress = new double[n1h.dim[0]];
-      double res2metersfactor = get_space_to_meters_factor();
-      for(int i=0; i<n1h.dim[0]; i++) {
-	dims[i] = n1h.dim[i+1];
-	ress[i] = n1h.pixdim[i+1];
-	// nifti reserves first 3 dims for space and dim 4 for time
-	if(i < 3) ress[i] *= res2metersfactor;
-	else if(i == 3) ress[i] *= get_time_to_seconds_factor();
+    if(cnuDims == null) synchronized (localLock) {
+      if(cnuDims == null) {
+	cnuDims = new CNUDimensions();
+	int[] dims = new int[n1h.dim[0]];
+	double[] ress = new double[n1h.dim[0]];
+	double res2metersfactor = get_space_to_meters_factor();
+	for(int i=0; i<n1h.dim[0]; i++) {
+	  dims[i] = n1h.dim[i+1];
+	  ress[i] = n1h.pixdim[i+1];
+	  // nifti reserves first 3 dims for space and dim 4 for time
+	  if(i < 3) ress[i] *= res2metersfactor;
+	  else if(i == 3) ress[i] *= get_time_to_seconds_factor();
+	}
+	cnuDims.setValues(dims, niftiToCNUType(n1h.datatype), 0);
+	cnuDims.setSpatialResolutions(ress);
+	// 1/16/2018 added check for q-form and s-form prior to using Nifti method 1 defuault orientation values
+	AffineCoordinateMap coormap = getQFormCoordinateMap();
+	if(coormap == null) coormap = getSFormCoordinateMap();
+	if(coormap != null) {
+	  // determine orientation from coordinate map
+	  XYZDouble pixres = new XYZDouble(ress.length>0?ress[0]:1, ress.length>1?ress[1]:1, ress.length>2?ress[2]:1);
+	  XYZDouble firstSlice = coormap.toSpace(new XYZDouble(0,0,0), pixres);
+	  XYZDouble secondSlice = coormap.toSpace(new XYZDouble(0,0,1), pixres);
+	  double adiffx = Math.abs(secondSlice.x - firstSlice.x);
+	  double adiffy = Math.abs(secondSlice.y - firstSlice.y);
+	  double adiffz = Math.abs(secondSlice.z - firstSlice.z);
+	  // which dim changed the most
+	  if(adiffx > adiffz) {
+	    if(adiffx > adiffy) cnuDims.setOrientation(CNUDimensions.SAGITTAL);
+	    else cnuDims.setOrientation(CNUDimensions.CORONAL);
+	  } else if(adiffy > adiffz) {
+	    cnuDims.setOrientation(CNUDimensions.CORONAL);
+	  } else {
+	    cnuDims.setOrientation(CNUDimensions.TRANSVERSE);
+	  }
+	  cnuDims.setOrientationOrder(CNUDimensions.RIGHT_POSITIVE | CNUDimensions.ANTERIOR_POSITIVE | CNUDimensions.SUPERIOR_POSITIVE);
+	} else {
+	  // nifti method 1 default orientation values
+	  cnuDims.setOrientation(CNUDimensions.TRANSVERSE);
+	  cnuDims.setOrientationOrder(CNUDimensions.RIGHT_POSITIVE | CNUDimensions.ANTERIOR_POSITIVE | CNUDimensions.SUPERIOR_POSITIVE);
+	}
       }
-      lsize.setValues(dims, niftiToCNUType(n1h.datatype), 0);
-      lsize.setSpatialResolutions(ress);
-      // nifti method 1 default orientation values
-      lsize.setOrientationOrder(CNUDimensions.RIGHT_POSITIVE | CNUDimensions.ANTERIOR_POSITIVE | CNUDimensions.SUPERIOR_POSITIVE);
-      lsize.setOrientation(CNUDimensions.TRANSVERSE);
     }
-    return(lsize);
+    return (CNUDimensions) cnuDims.clone();
   }
   /**
    * Outputs the QForm coordinate map derived from the header.
@@ -244,18 +272,22 @@ public class NiftiHeader {
    * @return	a copy of the QForm coordinate map or <code>null</code> if not applicable
    */
   public NiftiQFormCoordinateMap getQFormCoordinateMap() {
+    if(qformcoormap == null) synchronized (localLock) {
       if(n1h.qform_code > 0) {
+	if(qformcoormap == null) {
 	  double res2metersfactor = get_space_to_meters_factor();
-	  return new NiftiQFormCoordinateMap(n1h.quatern_b, n1h.quatern_c, n1h.quatern_d,
-					     n1h.qoffset_x*res2metersfactor,
-					     n1h.qoffset_y*res2metersfactor,
-					     n1h.qoffset_z*res2metersfactor,
-					     n1h.pixdim[1]*res2metersfactor,
-					     n1h.pixdim[2]*res2metersfactor,
-					     n1h.pixdim[3]*res2metersfactor,
-					     n1h.get_qfac(), "qform");
+	  qformcoormap = new NiftiQFormCoordinateMap(n1h.quatern_b, n1h.quatern_c, n1h.quatern_d,
+						     n1h.qoffset_x*res2metersfactor,
+						     n1h.qoffset_y*res2metersfactor,
+						     n1h.qoffset_z*res2metersfactor,
+						     n1h.pixdim[1]*res2metersfactor,
+						     n1h.pixdim[2]*res2metersfactor,
+						     n1h.pixdim[3]*res2metersfactor,
+						     n1h.get_qfac(), "qform");
+	}
       }
-      else return null;
+    }
+    return qformcoormap;
   }
   /**
    * Outputs the SForm coordinate map derived from the header.
@@ -263,14 +295,19 @@ public class NiftiHeader {
    * @return	a copy of the SForm coordinate map or <code>null</code> if not applicable
    */
   public NiftiSFormCoordinateMap getSFormCoordinateMap() {
-    if(n1h.sform_code > 0)
-      return new NiftiSFormCoordinateMap(n1h.srow_x, n1h.srow_y, n1h.srow_z,
-					 new XYZDouble(n1h.pixdim[1],
-						       n1h.pixdim[2],
-						       n1h.pixdim[3]),
-					 get_space_to_meters_factor(),
-					 niftiXFormCodeToString(n1h.sform_code));
-    else return null;
+    if(sformcoormap == null) synchronized (localLock) {
+      if(n1h.sform_code > 0) {
+	if(sformcoormap == null) {
+	  sformcoormap = new NiftiSFormCoordinateMap(n1h.srow_x, n1h.srow_y, n1h.srow_z,
+						     new XYZDouble(n1h.pixdim[1],
+								   n1h.pixdim[2],
+								   n1h.pixdim[3]),
+						     get_space_to_meters_factor(),
+						     niftiXFormCodeToString(n1h.sform_code));
+	}
+      }
+    }
+    return(sformcoormap);
   }
   /**
    * Gets the quantification factor for this nifti header.

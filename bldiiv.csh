@@ -1,11 +1,20 @@
 #!/bin/csh
-set version=1187
+set version=119
 # remember to update multiJarMainClass with the new version
 #
-set classpath=.:bsh.jar
-set coptions="-classpath $classpath"
+set classpath=classes:bsh:Acme:.
+set classdir="`pwd`/classes"
+set coptions="-d ${classdir} -classpath $classpath"
 set docoptions="-public -classpath $classpath -d iiV${version}api -doctitle iiV${version} -header iiV${version} -footer iiV${version} -linkoffline http://java.sun.com/j2se/1.4/docs/api j2se1.4.2packages -linkoffline http://www.beanshell.org/javadoc bshpackages"
 set jarcmd=jar
+set jardir=`pwd`
+
+# start building all in one files
+set jarsrcfile=${jardir}/iiV${version}src.jar
+set jarclassfile=${jardir}/iiV${version}.jar
+${jarcmd} cvfm ${jarclassfile} allInOneMainClass LICENSE changes
+${jarcmd} cvf ${jarsrcfile} allInOneMainClass multiJarMainClass LICENSE changes bldiiv.csh
+
 set compilefiles=iiv/iiV.java
 #
 set compilefiles=(${compilefiles} iiv/CNUViewer.java)
@@ -153,9 +162,13 @@ set allfiles=(${allfiles} ${compilefiles})
 #
 javac ${coptions} ${compilefiles}
 #
-${jarcmd} cvfm iiV${version}main.jar multiJarMainClass LICENSE changes ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/}
-${jarcmd} cvfm iiV${version}.jar allInOneMainClass LICENSE changes ${jarfiles:gs/.java/.class/} ${allfiles:gs/.java/$*.class/}
-${jarcmd} cvf iiV${version}src.jar allInOneMainClass multiJarMainClass LICENSE changes bldiiv.csh ${jarfiles}
+# create part jar class file
+set jarpartclassfile=${jardir}/iiV${version}main.jar
+${jarcmd} cvfm ${jarpartclassfile} multiJarMainClass LICENSE changes
+(cd ${classdir}; ${jarcmd} uvf ${jarpartclassfile} ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/})
+# add to all in one jar files
+(cd ${classdir}; ${jarcmd} uvf ${jarclassfile} ${jarfiles:gs/.java/.class/} ${allfiles:gs/.java/$*.class/})
+${jarcmd} uvf ${jarsrcfile} ${jarfiles}
 #
 set compilefiles=iiv/dialog/ColorDialog.java
 set compilefiles=(${compilefiles} iiv/dialog/CoordinateMapDialog.java)
@@ -176,9 +189,15 @@ set jarfiles=(${compilefiles})
 set allfiles=(${allfiles} ${compilefiles})
 #
 javac ${coptions} ${compilefiles}
-${jarcmd} cvfm iiV${version}dialogs.jar multiJarMainClass LICENSE ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/}
-${jarcmd} uf iiV${version}.jar ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/}
-${jarcmd} uf iiV${version}src.jar ${jarfiles}
+
+# create part jar class file
+set jarpartclassfile=${jardir}/iiV${version}dialogs.jar
+${jarcmd} cvfm ${jarpartclassfile} multiJarMainClass LICENSE changes
+(cd ${classdir}; ${jarcmd} uvf ${jarpartclassfile} ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/})
+# add to all in one jar files
+(cd ${classdir}; ${jarcmd} uvf ${jarclassfile} ${jarfiles:gs/.java/.class/} ${allfiles:gs/.java/$*.class/})
+${jarcmd} uvf ${jarsrcfile} ${jarfiles}
+
 #
 
 set compilefiles=iiv/CNUViewerMenuBar.java
@@ -188,27 +207,43 @@ set jarfiles=(${compilefiles})
 set allfiles=(${allfiles} ${compilefiles})
 #
 javac ${coptions} ${compilefiles}
-${jarcmd} cvfm iiV${version}mainmenu.jar multiJarMainClass LICENSE ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/}
-${jarcmd} uf iiV${version}.jar ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/}
-${jarcmd} uf iiV${version}src.jar ${jarfiles}
+
+# create part jar class file
+set jarpartclassfile=${jardir}/iiV${version}mainmenu.jar
+${jarcmd} cvfm ${jarpartclassfile} multiJarMainClass LICENSE changes
+(cd ${classdir}; ${jarcmd} uvf ${jarpartclassfile} ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/})
+# add to all in one jar files
+(cd ${classdir}; ${jarcmd} uvf ${jarclassfile} ${jarfiles:gs/.java/.class/} ${allfiles:gs/.java/$*.class/})
+${jarcmd} uvf ${jarsrcfile} ${jarfiles}
+
 #
 set compilefiles=iiv/dialog/ControlDialog.java
 set jarfiles=(${compilefiles})
 set allfiles=(${allfiles} ${compilefiles})
 #
 javac ${coptions} ${compilefiles}
-${jarcmd} cvfm iiV${version}mainpanel.jar multiJarMainClass LICENSE ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/}
-${jarcmd} uf iiV${version}.jar ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/}
-${jarcmd} uf iiV${version}src.jar ${jarfiles}
+
+set jarpartclassfile=${jardir}/iiV${version}mainpanel.jar
+${jarcmd} cvfm ${jarpartclassfile} multiJarMainClass LICENSE changes
+(cd ${classdir}; ${jarcmd} uvf ${jarpartclassfile} ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/})
+# add to all in one jar files
+(cd ${classdir}; ${jarcmd} uvf ${jarclassfile} ${jarfiles:gs/.java/.class/} ${allfiles:gs/.java/$*.class/})
+${jarcmd} uvf ${jarsrcfile} ${jarfiles}
+
 #
 set compilefiles=iiv/dialog/SaveDialog.java
 set jarfiles=(${compilefiles})
 set allfiles=(${allfiles} ${compilefiles})
 #
 javac ${coptions} ${compilefiles}
-${jarcmd} cvfm iiV${version}save.jar multiJarMainClass LICENSE ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/} Acme
-${jarcmd} uf iiV${version}.jar ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/}
-${jarcmd} uf iiV${version}src.jar ${jarfiles}
+
+set jarpartclassfile=${jardir}/iiV${version}save.jar
+${jarcmd} cvfm ${jarpartclassfile} multiJarMainClass LICENSE changes
+(cd ${classdir}; ${jarcmd} uvf ${jarpartclassfile} ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/})
+# add to all in one jar files
+(cd ${classdir}; ${jarcmd} uvf ${jarclassfile} ${jarfiles:gs/.java/.class/} ${allfiles:gs/.java/$*.class/})
+${jarcmd} uvf ${jarsrcfile} ${jarfiles}
+
 #
 set compilefiles=iiv/io/AnalyzeHeader.java
 set compilefiles=(${compilefiles} iiv/io/CMRRSdtImgFile.java)
@@ -227,19 +262,22 @@ set compilefiles=(${compilefiles} iiv/io/ThreeDSSPFile.java)
 set jarfiles=(${compilefiles})
 set allfiles=(${allfiles} ${compilefiles})
 #
-javac ${coptions} ${compilefiles}
-${jarcmd} cvfm iiV${version}fileformats.jar multiJarMainClass LICENSE ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/}
-${jarcmd} uf iiV${version}.jar ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/}
-${jarcmd} uf iiV${version}src.jar ${jarfiles}
+set jarpartclassfile=${jardir}/iiV${version}fileformats.jar
+${jarcmd} cvfm ${jarpartclassfile} multiJarMainClass LICENSE changes
+(cd ${classdir}; ${jarcmd} uvf ${jarpartclassfile} ${jarfiles:gs/.java/.class/} ${jarfiles:gs/.java/$*.class/})
+# add to all in one jar files
+(cd ${classdir}; ${jarcmd} uvf ${jarclassfile} ${jarfiles:gs/.java/.class/} ${allfiles:gs/.java/$*.class/})
+${jarcmd} uvf ${jarsrcfile} ${jarfiles}
+
 #
 # add bean shell
-${jarcmd} uf iiV${version}.jar bsh
-${jarcmd} uf iiV${version}src.jar bsh
+${jarcmd} uvf ${jarclassfile} bsh
+${jarcmd} uvf ${jarsrcfile} bsh
 # finishing with Acme files
-${jarcmd} uf iiV${version}.jar Acme
-${jarcmd} uf iiV${version}src.jar Acme
+${jarcmd} uvf ${jarclassfile} Acme
+${jarcmd} uvf ${jarsrcfile} Acme
 #
 # build API html documentations for all classes
-javadoc ${docoptions}  -bottom '<i>Copyright &copy; 2007 Cognitive Neuroimaging Unit, VA Medical Center, Minneapolis, MN <br/>&lt;<a href="http://james.psych.umn.edu/">Cognitive Neuroimaging Unit Home Page</a>&gt;<br/><a href="mailto:webmaster@james.psych.umn.edu">webmaster@james.psych.umn.edu</a></i>' ${allfiles}
+javadoc ${docoptions}  -bottom '<i>Copyright &copy; 2018 Cognitive Neuroimaging Unit, VA Medical Center, Minneapolis, MN</i>' ${allfiles}
 #
 #end csh

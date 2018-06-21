@@ -1516,12 +1516,8 @@ public class CNUDisplayScript implements CNUFileObject, Runnable {
       }
       else if( "view".equals(command) ) {
 	if(nps == 1 && scnt == 1) {
-	  if("coronal".equals(firstName))
-	    cnuv.setSliceViewMode(CNUDimensions.CORONAL);
-	  else if("sagittal".equals(firstName))
-	    cnuv.setSliceViewMode(CNUDimensions.SAGITTAL);
-	  else if("transverse".equals(firstName))
-	    cnuv.setSliceViewMode(CNUDimensions.TRANSVERSE);
+	  int viewMode = CNUDimensions.orientationValueOf(firstName);
+	  if(viewMode != CNUDimensions.UNKNOWN) cnuv.setSliceViewMode(viewMode);
 	  else return new LineParseException("invalid view option");
 	}
 	else return new LineParseException("invalid view option");
@@ -2047,6 +2043,8 @@ public class CNUDisplayScript implements CNUFileObject, Runnable {
 	{"unselectShowPointLines", "additions"}, {"unselectShowPointLines", "all"},
 	{"unset", "variable_name"},
 	{"view", "coronal"}, {"view", "sagittal"}, {"view", "transverse"},
+	{"view", "xy_slice"}, {"view", "xz_slice"}, {"view", "yx_slice"},
+	{"view", "yz_slice"}, {"view", "zx_slice"}, {"view", "zy_slice"},
 	{"zoom", "alpha_weighted_interpolate"},
 	{"zoom", "apply"},
 	{"zoom", "interpolate"}, {"zoom", "off"}, {"zoom", "on"},

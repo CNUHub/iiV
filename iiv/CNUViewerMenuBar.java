@@ -130,6 +130,7 @@ public class CNUViewerMenuBar extends JMenuBar {
     toolsMenu.add(new JLabel("Default Labels:"));
     cnuviewerActions.orientationLabelsCheckboxAction.addCheckboxTo(toolsMenu);
     cnuviewerActions.sliceLabelsCheckboxAction.addCheckboxTo(toolsMenu);
+    cnuviewerActions.iValueLabelsCheckboxAction.addCheckboxTo(toolsMenu);
 
     cnuviewerActions.applyLabelsAction.addTo(toolsMenu);
     toolsMenu.addSeparator();

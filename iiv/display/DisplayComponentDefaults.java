@@ -64,8 +64,9 @@ public class DisplayComponentDefaults {
   static private DefaultBoundedRangeModel yEndModel =
       new DefaultBoundedRangeModel(127, 0, 0, 127);
 
-  static public String[] sliceViewChoices = { "Transverse",
-					      "Coronal", "Sagittal" };
+  //  static public String[] sliceViewChoices = { "Transverse",
+  //					      "Coronal", "Sagittal" };
+  static public String[] sliceViewChoices = CNUDimensions.ORIENTATION_NAMES;
   static private DefaultComboBoxModel sliceViewChoiceModel =
       new DefaultComboBoxModel(sliceViewChoices);
   static public String sliceViewChoiceTipText =
@@ -97,11 +98,13 @@ public class DisplayComponentDefaults {
   /**
    * Sets the slice view mode.
    *
-   * @param viewMode	CNUDimensions.TRANSVERSE, CNUDimensions.CORONAL or
-   *			CNUDimensions.SAGITTAL
+   * @param viewMode	CNUDimensions.TRANSVERSE, CNUDimensions.CORONAL
+   *			CNUDimensions.SAGITTAL...
    */
   public static void setSliceViewMode( final int viewMode ) {
-    int index = 0;
+    int index = viewMode;
+    if(index >= sliceViewChoices.length) index = 0;
+    /*
     switch(viewMode) {
     case CNUDimensions.TRANSVERSE:
     default:
@@ -113,17 +116,22 @@ public class DisplayComponentDefaults {
 	index = 2;
 	break;
     }
+    */
     getSliceViewChoiceModel().setSelectedItem(sliceViewChoices[index]);
   }
   /**
    * Gets the slice view mode.
    *
-   * @return	CNUDimensions.TRANSVERSE, CNUDimensions.CORONAL or
-   *		CNUDimensions.SAGITTAL
+   * @return	CNUDimensions.TRANSVERSE, CNUDimensions.CORONAL,
+   *		CNUDimensions.SAGITTAL...
    */
   public static int getSliceViewMode() {
       DefaultComboBoxModel dcbm = getSliceViewChoiceModel();
-      switch(dcbm.getIndexOf(dcbm.getSelectedItem())) {
+      int viewMode = dcbm.getIndexOf(dcbm.getSelectedItem());
+      if(viewMode >= sliceViewChoices.length) viewMode = 0;
+      return(viewMode);
+      /*
+      switch(viewMode) {
       case 0:
       default:
 	return CNUDimensions.TRANSVERSE;
@@ -132,6 +140,7 @@ public class DisplayComponentDefaults {
       case 2:
 	return CNUDimensions.SAGITTAL;
       }
+      */
   }
   /**
    * Sets the scaling option.

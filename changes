@@ -1,3 +1,33 @@
+
+
+05/23/2018 iiv/io/CNUEcatImgFile.java, iiv/io/CNUEcatHeader.java, iiv/data/CNUTypes.java  modified reading ECAT images to track max/min quantified values,set quantification factor to min instead of max from planes, set single quant to input min quant instead of max, and choose internal storage to enable storing max quantified value Note - old script files may display ecat differently because of scaling, modifying scale objects to quantify values such as "cnuscale_vnum2.setQuantificationState(false);" to "cnuscale_vnum2.setQuantificationState(true);" will restore similar look
+-rw-r--r--. 1 jtlee psychiatry  24001 May 23 13:46 iiv/data/CNUTypes.java
+-rw-r--r--. 1 jtlee psychiatry  42977 May 10  2016 iiv/display/DisplayComponent.java
+-rw-r--r--. 1 jtlee psychiatry  25598 May 23 13:49 iiv/io/CNUEcatHeader.java
+-rw-r--r--. 1 jtlee psychiatry  15070 May 23 14:58 iiv/io/CNUEcatImgFile.java
+
+01/11/2018-02/23/2018 Improved handling of image file built in coordinate maps, automaticly reslice data to transverse,coronal,sagittal based on map, added display modes to allow displaying originals slice modes ignoring coordinate map, fixed multiple coordinate mapping bugs with resliced images
+-rw-r--r--. 1 jtlee psychiatry  28097 Feb 23 11:24 iiv/CNUViewerActions.java
+-rw-r--r--. 1 jtlee psychiatry 100609 Feb 23 11:41 iiv/CNUViewer.java
+-rw-r--r--. 1 jtlee psychiatry  10720 Feb 23 11:54 iiv/CNUViewerMenuBar.java
+-rw-r--r--. 1 jtlee psychiatry  11066 Jan 30 14:32 iiv/data/AffineCoordinateMap.java
+-rw-r--r--. 1 jtlee psychiatry   6087 Jan 25 12:19 iiv/data/CNUData.java
+-rw-r--r--. 1 jtlee psychiatry  27810 Jan 24 14:25 iiv/data/CNUDimensions.java
+-rw-r--r--. 1 jtlee psychiatry   5131 Jan 11 13:02 iiv/data/NiftiQFormCoordinateMap.java
+-rw-r--r--. 1 jtlee psychiatry   6009 Jan 11 13:45 iiv/data/NiftiSFormCoordinateMap.java
+-rw-r--r--. 1 jtlee psychiatry  19965 Jan 25 11:17 iiv/data/PrimaryOrthoDataSlicer.java
+-rw-r--r--. 1 jtlee psychiatry   9957 Feb 23 13:37 iiv/dialog/ControlDialog.java
+-rw-r--r--. 1 jtlee psychiatry  32401 Mar 14 13:09 iiv/dialog/CoordinateMapDialog.java
+-rw-r--r--. 1 jtlee psychiatry 196148 Feb 26 12:53 iiv/display/CNUDisplay.java
+-rw-r--r--. 1 jtlee psychiatry  25535 Jan 25 12:21 iiv/display/DisplayComponentDefaults.java
+-rw-r--r--. 1 jtlee psychiatry  20138 Jan 25 13:11 iiv/display/IntensityProjectionImage.java
+-rw-r--r--. 1 jtlee psychiatry  44219 Mar 12 11:27 iiv/display/SingleImg.java
+-rw-r--r--. 1 jtlee psychiatry   4299 Dec 28 14:32 iiv/io/CNUNiftiImgFile.java
+-rw-r--r--. 1 jtlee psychiatry  50558 Jan 18 10:37 iiv/io/NiftiHeader.java
+-rw-r--r--. 1 jtlee psychiatry 106337 Jan 25 13:11 iiv/script/CNUDisplayScript.java
+-rw-r--r--. 1 jtlee psychiatry  81032 Jan 25 13:11 iiv/script/iiVBshScript.java
+
+12/28/2017 iiv/data/NiftiSFormCoordinateMap.java -- added convertion of row res to meter units
 05/10/2016 iiv/display/DisplayComponent.java  -- postObjectToScript(...) added check for null foreground color to fix creating invalid script command setForeground("")
 05/04/2016 iiv/display/DisplayComponent.java -- added catch/throw to paint(Graphics g) to note Graphics.drawImage(...) throws NullPointerException on specific enviroment when image has color model with transparent values -- switching to color model with alpha values including one alpha=1 instead of full transparent alpha=0 or one alpha=254 instead of full opaque alpha=255 forcing alpha usage seems to solve problem
 03/25/2016  iiv/display/ShowPointController.java -- fixed settingsToScript output adding quotes around output color string for setCrossHairColor and start "(" for setCrossHairState

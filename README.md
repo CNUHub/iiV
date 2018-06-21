@@ -8,12 +8,13 @@ To run:
 
 Written by:
 
-Joel T. Lee                Home Page:  http://james.psych.umn.edu/~jtlee/
-Computer Scientist         E-mail:     leexx235@gmail.com
+Joel T. Lee
+Computer Scientist
 Cognitive Neuroimaging Unit
 VA Medical Center         
 One Veterans Drive
 Minneapolis, MN 55417
+E-mail:     leexx235@gmail.com
 
 Under the direction of:
 
@@ -69,4 +70,4 @@ iiV uses BeanShell
         The Beanshell license is available here: http://www.beanshell.org/license.html
 
 
-Copyright 2017 Cognitive Neuroimaging Unit, VA Medical Center, Minneapolis
+Copyright 2018 Cognitive Neuroimaging Unit, VA Medical Center, Minneapolis

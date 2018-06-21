@@ -222,6 +222,7 @@ public class ControlDialog extends CNUDialog {
     cnuviewerActions.formatDialogVSBU.addTo(toolbar);
     cnuviewerActions.orientationLabelsCheckboxAction.addCheckboxTo(toolbar);
     cnuviewerActions.sliceLabelsCheckboxAction.addCheckboxTo(toolbar);
+    cnuviewerActions.iValueLabelsCheckboxAction.addCheckboxTo(toolbar);
 
     cnuviewerActions.applyLabelsAction.addTo(toolbar);
     toolbar.add(Box.createHorizontalGlue());

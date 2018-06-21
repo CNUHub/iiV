@@ -345,6 +345,92 @@ public class CNUEcatHeader {
     }
     return outOffset;
   }
+  /*
+   * Keeps track of offset and value ranges during copy.
+   */
+  public static class CopyConvertInfo {
+    int currentOffset;
+    double maxQuantified;
+    double minQuantified;
+    CopyConvertInfo(int currentOffset, double maxQuantified, double minQuantified) {
+      this.currentOffset = currentOffset;
+      this.maxQuantified = maxQuantified;
+      this.minQuantified = minQuantified;
+    }
+  }
+  /**
+   * Copy a block of data while converting it from external
+   * ecat formats to internal formats.
+   *
+   * @param inData	data to convert
+   * @param inOffset	offset to first byte of data to convert
+   * @param inEcatType  type of input data
+   * @param outArray	array to contain data of output type
+   * @param outOffset	offset to outArray for first word of converted data
+   * @param outCNUType	type of data to convert to and store as words
+   *			in outArray
+   * @param count	number of words to convert
+   * @return		offset to next available location in outArray
+   */
+  public static CopyConvertInfo copyConvertBlock(CopyConvertInfo convertInfo, byte[] inData, int inOffset,
+	int inEcatType, Object outArray, int outOffset, int outCNUType,
+	int count, double quant_factor) {
+    if(count > 0 && (inOffset < inData.length)) {
+      int wordBytes = bytesPerWord(inEcatType);
+      int i=0;
+      double absQuantValue;
+      switch (inEcatType) {
+      case SUN_R4:
+      case VAX_R4:
+	// float types
+	double value = getFloatValue(inData, inOffset, inEcatType);
+	absQuantValue = Math.abs(quant_factor*value);
+	// initialize convertInfo if null from input
+	if(convertInfo == null) convertInfo=new CopyConvertInfo(outOffset, absQuantValue, absQuantValue);
+	else if(absQuantValue > convertInfo.maxQuantified) convertInfo.maxQuantified=absQuantValue;
+	else if(absQuantValue < convertInfo.minQuantified) convertInfo.minQuantified=absQuantValue;
+
+	CNUTypes.setArrayValue(value, outArray, outOffset, outCNUType);
+	inOffset += wordBytes;
+	outOffset++;
+	for(i = 1; (i < count) && (inOffset < inData.length); i++) {
+	  value = getFloatValue(inData, inOffset, inEcatType);
+	  absQuantValue = Math.abs(quant_factor*value);
+	  if(absQuantValue > convertInfo.maxQuantified) convertInfo.maxQuantified=absQuantValue;
+	  else if(absQuantValue < convertInfo.minQuantified) convertInfo.minQuantified=absQuantValue;
+	  CNUTypes.setArrayValue(value, outArray, outOffset, outCNUType);
+	  inOffset += wordBytes;
+	  outOffset++;
+	}
+	convertInfo.currentOffset = outOffset;
+	break;
+      default:
+	// integer types
+	int intValue = getIntValue(inData, inOffset, inEcatType);
+	absQuantValue = Math.abs(quant_factor*intValue);
+	// initialize convertInfo if null from input
+	if(convertInfo == null) convertInfo=new CopyConvertInfo(outOffset, absQuantValue, absQuantValue);
+	else if(absQuantValue > convertInfo.maxQuantified) convertInfo.maxQuantified=absQuantValue;
+	else if(absQuantValue < convertInfo.minQuantified) convertInfo.minQuantified=absQuantValue;
+
+	CNUTypes.setArrayValue(intValue, outArray, outOffset, outCNUType);
+	inOffset += wordBytes;
+	outOffset++;
+	for(i = 1; (i < count) && (inOffset < inData.length); i++) {
+	  intValue = getIntValue(inData, inOffset, inEcatType);
+	  absQuantValue = Math.abs(quant_factor*intValue);
+	  if(absQuantValue > convertInfo.maxQuantified) convertInfo.maxQuantified=absQuantValue;
+	  else if(absQuantValue < convertInfo.minQuantified) convertInfo.minQuantified=absQuantValue;
+	  CNUTypes.setArrayValue(intValue, outArray, outOffset, outCNUType);
+	  inOffset += wordBytes;
+	  outOffset++;
+	}
+	convertInfo.currentOffset = outOffset;
+	break;
+      }
+    }
+    return convertInfo;
+  }
   static int FALLOUT_INT_VALUE = Integer.MIN_VALUE;
   static float FALLOUT_FLOAT_VALUE = Float.NaN;
 /* size constants */

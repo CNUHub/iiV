@@ -44,6 +44,9 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
   private String sliceLabel = null;
   private boolean sliceLabelOn = false;
 
+  private String iValueLabel = null;
+  private boolean iValueLabelOn = false;
+
   private Object stateParameterLock = new Object();
   private CoordinateMap coorMap = null;
   private boolean coordinateMapDataViewDependent = false;
@@ -74,8 +77,8 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
    * @param inImg		the data to retrieve image pixels from
    * @param sliceViewMode	the slice orientation to display
    *				<code>CNUDimensions.TRANSVERSE</code>,
-   *				<code>CNUDimensions.CORONAL</code>, or
-   *				<code>CNUDimensions.SAGITTAL</code>
+   *				<code>CNUDimensions.CORONAL</code>,
+   *				<code>CNUDimensions.SAGITTAL</code>...
    * @param slice		the slice number in the range from 0 to
    *				the number of slices for the sliceViewMode
    * @param iValue		the 4th or i dimension to use for displaying
@@ -93,8 +96,8 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
    * @param inImg		the data to retrieve image pixels from
    * @param sliceViewMode	the slice orientation to display
    *				<code>CNUDimensions.TRANSVERSE</code>,
-   *				<code>CNUDimensions.CORONAL</code>, or
-   *				<code>CNUDimensions.SAGITTAL</code>
+   *				<code>CNUDimensions.CORONAL</code>,
+   *				<code>CNUDimensions.SAGITTAL</code>...
    * @param slice		the slice number in the range from 0 to
    *				the number of slices for the sliceViewMode
    * @param iValue		the 4th or i dimension to use for displaying
@@ -114,8 +117,8 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
    * @param inImg		the data to retrieve image pixels from
    * @param sliceViewMode	the slice orientation to display
    *				<code>CNUDimensions.TRANSVERSE</code>,
-   *				<code>CNUDimensions.CORONAL</code>, or
-   *				<code>CNUDimensions.SAGITTAL</code>
+   *				<code>CNUDimensions.CORONAL</code>,
+   *				<code>CNUDimensions.SAGITTAL</code>...
    * @param slice		the slice number in the range from 0 to
    *				the number of slices for the sliceViewMode
    * @param iValue		the 4th or i dimension to use for displaying
@@ -178,6 +181,7 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
     setScale(sc);
     setOrientationLabels();
     setSliceLabel();
+    setIValueLabel();
     createRawIp();
   }
   /**
@@ -193,6 +197,7 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
       }
       setOrientationLabels();
       setSliceLabel();
+      setIValueLabel();
     }
   }
   /**
@@ -206,6 +211,7 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
     }
     setOrientationLabels();
     setSliceLabel();
+    setIValueLabel();
   }
   /**
    * Gets the coordinate mapping object.
@@ -262,6 +268,8 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
     // duplicate label display modes
     si.setSliceLabelOn(getSliceLabelOn());
     si.setOrientationLabelsOn(getOrientationLabelsOn());
+    si.setIValueLabelOn(getIValueLabelOn());
+    si.setOrientationLabelsOn(getOrientationLabelsOn());
 
     // duplicate other features
     si.setFont(getFont());
@@ -294,12 +302,16 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
     else sb.append("orientation labels off\n");
     if(sliceLabelOn) sb.append("sliceLabel=").append(sliceLabel).append('\n');
     else sb.append("slice labels off\n");
+    if(iValueLabelOn) sb.append("iValueLabel=").append(iValueLabel).append('\n');
+    else sb.append("iValue labels off\n");
     sb.append("coorMap=");
     sb.append((coorMap == null) ? "null" : coorMap.toString());
     sb.append('\n');
     sb.append("coordinateMapDataViewDependent=").append(coordinateMapDataViewDependent);
     sb.append('\n');
     sb.append("dataSlicer=");
+    sb.append((dataSlicer == null) ? "null" : dataSlicer.toString());
+    sb.append('\n');
     /*
     if(sliceOrig != null) {
       sb.append("sliceOrig=");
@@ -403,6 +415,12 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
 
       sb.append(objectVariableName);
       sb.append(".setSliceLabel(\"").append(sliceLabel).append("\");\n");
+
+      sb.append(objectVariableName);
+      sb.append(".setIValueLabelOn(").append(iValueLabelOn).append(");\n");
+
+      sb.append(objectVariableName);
+      sb.append(".setIValueLabel(\"").append(iValueLabel).append("\");\n");
 
       sb.append(objectVariableName);
       sb.append(".setOrientationLabelsOn(").append(orientationLabelsOn);
@@ -570,15 +588,35 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
       if((orientationOrder & CNUDimensions.SUPERIOR_POSITIVE) != 0) {
         northSI = "I"; southSI = "S";
       }
-      west = westLR; east = eastLR;
-      north = northAP; south = southAP;
-      int sliceViewMode = getSliceViewMode();
-      if(sliceViewMode == CNUDimensions.CORONAL) {
-	  north = northSI; south = southSI;
-      }
-      else if(sliceViewMode == CNUDimensions.SAGITTAL) {
-	  north = northSI; south = southSI;
-	  west = northAP; east = southAP;
+      switch(getSliceViewMode()) {
+      default:
+      case CNUDimensions.TRANSVERSE:
+      case CNUDimensions.XY_SLICE:
+	west = westLR; east = eastLR;
+	north = northAP; south = southAP;
+	break;
+      case CNUDimensions.YX_SLICE:
+	west = northAP; east = southAP;
+	north = westLR; south = eastLR;
+	break;
+      case CNUDimensions.CORONAL:
+      case CNUDimensions.XZ_SLICE:
+	west = westLR; east = eastLR;
+	north = northSI; south = southSI;
+	break;
+      case CNUDimensions.ZX_SLICE:
+	west = northSI; east = southSI;
+	north = westLR; south = eastLR;
+	break;
+      case CNUDimensions.SAGITTAL:
+      case CNUDimensions.YZ_SLICE:
+	west = northAP; east = southAP;
+	north = northSI; south = southSI;
+	break;
+      case CNUDimensions.ZY_SLICE:
+	west = northSI; east = southSI;
+	north = northAP; south = southAP;
+	break;
       }
     }
     setOrientationLabels(north, south, west, east);
@@ -626,6 +664,60 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
       }
     }
   }
+
+
+  /**
+   * Sets iValue label.
+   *
+   * @param iValueLabel	label to display at bottom left center of image
+   */
+  public void setIValueLabel(String iValueLabel) {
+    synchronized (labelLock) {
+      if(iValueLabel == null) {
+	if(this.iValueLabel != null) {
+          this.iValueLabel = iValueLabel;
+          invalidate();
+	}
+      }
+      else if(! iValueLabel.equals(this.iValueLabel)) {
+        this.iValueLabel = iValueLabel;
+        invalidate();
+      }
+    }
+  }
+  /**
+   * Sets the default iValue label based on iValue and coordinate map.
+   */
+  public void setIValueLabel() {
+    synchronized (stateParameterLock) {
+      if(inImg.getDimensions().getNumberOfDimensions() < 3) setIValueLabel(null);
+      else setIValueLabel("i=" + Integer.toString(getIValue()));
+    }
+  }
+  /**
+   * Sets the iValue label show or hide state.
+   *
+   * @param mode	<code>true</code> to display the iValue label
+   */
+  public void setIValueLabelOn(boolean mode) {
+    synchronized (labelLock) {
+      if(iValueLabelOn != mode) {
+        iValueLabelOn = mode;
+	invalidate();
+      }
+    }
+  }
+  /**
+   * Gets the iValue label on status
+   *
+   * @return	<code>true</code> if the iValue label is shown,
+   *		<code>false</code> otherwise
+   */
+  public boolean getIValueLabelOn() {
+    synchronized (labelLock) {
+      return iValueLabelOn;
+    }
+  }
   /**
    * Sets the number format for converting numbers to strings.
    *
@@ -653,23 +745,45 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
     synchronized (stateParameterLock) {
       if(coorM == null) setSliceLabel( Integer.toString(getSlice()) );
       else {
-        XYZDouble xyzpt = coorM.toSpace(new XYZDouble(
-	   getIndicesFromNonfilteredPoint( new Point(0, 0) ),
-	   0), getCoordinateResolutions());
+	// JTL 3/8/2018 changed to determine value from least changing and average or center of image
+	XYZDouble res = getCoordinateResolutions();
+	CNUDimensions sliceDims = dataSlicer.getSliceDimensions();
+        XYZDouble xyzpt = coorM.toSpace(new XYZDouble(getIndicesFromNonfilteredPoint( new Point(0, 0) ),0), res);
+        XYZDouble xyzpt2 = coorM.toSpace(new XYZDouble(getIndicesFromNonfilteredPoint( new Point(sliceDims.xdim()-1, sliceDims.ydim()-1) ),0), res);
 	double value;
+	double abs_diff_x = Math.abs(xyzpt.x - xyzpt2.x);
+	double abs_diff_y = Math.abs(xyzpt.y - xyzpt2.y);
+	double abs_diff_z = Math.abs(xyzpt.z - xyzpt2.z);
+	double smallest_diff = abs_diff_z;
+	if(abs_diff_x < abs_diff_z) {
+	  if(abs_diff_x < abs_diff_y) { value = (xyzpt.x + xyzpt2.x)/2; smallest_diff = abs_diff_x; }
+	  else { value = (xyzpt.y + xyzpt2.y)/2; smallest_diff = abs_diff_y; }
+	}
+	else if(abs_diff_y < abs_diff_z) { value = (xyzpt.y + xyzpt2.y)/2; smallest_diff = abs_diff_y; }
+	else value = (xyzpt.z + xyzpt2.z)/2;
+
+	/* slice view modes like XY may not correspond to transverse, coronal or sagittal
 	switch(getSliceViewMode()) {
 	default:
-	case CNUDimensions.TRANSVERSE: // x=R-L, y=P-A, z=S-I
+	case CNUDimensions.TRANSVERSE:
+	case CNUDimensions.XY_SLICE:
+	case CNUDimensions.YX_SLICE:
 	  value = xyzpt.z;
 	  break;
-	case CNUDimensions.CORONAL: // x=R-L, y=S-I, z=P-A
+	case CNUDimensions.CORONAL:
+	case CNUDimensions.XZ_SLICE:
+	case CNUDimensions.ZX_SLICE:
 	  value = xyzpt.y;
 	  break;
-	case CNUDimensions.SAGITTAL: // x=P-A, y=S-I, z=R-L
+	case CNUDimensions.SAGITTAL:
+	case CNUDimensions.YZ_SLICE:
+	case CNUDimensions.ZY_SLICE:
 	  value = xyzpt.x;
 	  break;
 	}
-	setSliceLabel(numberFormat.format(value * 1e3) + "mm");
+	*/
+	if(smallest_diff > 1e-16) setSliceLabel("<" + numberFormat.format(value * 1e3) + "mm>");
+	else setSliceLabel(numberFormat.format(value * 1e3) + "mm");
       }
     }
   }
@@ -742,6 +856,7 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
     }
     checkUpdateDataCoordinateMap(); // data changing data slicer might change coordinate map
     setSliceLabel();
+    setIValueLabel();
     setCrosshair(getCrosshairIndices(), getCrosshairColor());
     createRawIp();
     invalidateFilters();
@@ -755,9 +870,9 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
     return iValue;
   }
   /**
-   * Sets and displays a new slice of the input data.
+   * Sets and displays a new iValue of the input data.
    *
-   * @param slice	the slice number
+   * @param iValue	the I value number
    */
   public void setIValue( int iValue ) {
     synchronized (stateParameterLock) {
@@ -767,8 +882,9 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
       if(iValue < 0) iValue += isize;
       this.iValue = iValue;
     }
-    checkUpdateDataCoordinateMap();// data changing slice might change coordinate map
+    checkUpdateDataCoordinateMap();// data changing iValue might change coordinate map
     setSliceLabel();
+    setIValueLabel();
     setCrosshair(getCrosshairIndices(), getCrosshairColor());
     createRawIp();
     invalidateFilters();
@@ -825,6 +941,7 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
     }
     checkUpdateDataCoordinateMap();// data changing slice might change coordinate map
     setSliceLabel();
+    setIValueLabel();
     setCrosshair(getCrosshairIndices(), getCrosshairColor());
     createRawIp();
     invalidateFilters();
@@ -865,7 +982,7 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
     int min_width = displayImageSize.width;
     int min_height = displayImageSize.height;
     synchronized (labelLock) {
-      if(orientationLabelsOn || sliceLabelOn) {
+      if(orientationLabelsOn || sliceLabelOn || iValueLabelOn) {
         FontMetrics fm = getFontMetrics(getFont());
 	int ncharhigh = 0;
 	int bottomStringWidth = 0;
@@ -898,6 +1015,15 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
 	if(bottomStringWidth != 0) {
 	  min_height += fm.getHeight();
 	  ncharhigh++;
+	}
+	// add ivalue line below
+	if(iValueLabelOn && (iValueLabel != null)) {
+	  int subbottomStringWidth = fm.stringWidth(iValueLabel);
+	  min_width = Math.max(min_width, subbottomStringWidth);
+	  if(subbottomStringWidth != 0) {
+	    min_height += fm.getHeight();
+	    ncharhigh++;
+	  }
 	}
 	// number of characters high sets a minimum height
 	min_height = Math.max(min_height, ncharhigh * fm.getHeight());
@@ -940,8 +1066,7 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
    * Gets the point relative to the non-filtered
    * (no flip, rotation, zoom, or offset) image given the indices
    * corresponding to the original raw data this display component
-   * is created from.  This default implementation returns the
-   * indices stored in a Point object.
+   * is created from.
    *
    * @param	indices indices to original raw data which may have
    *		any number of dimensions
@@ -1008,18 +1133,19 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
   public void paint(Graphics g) {
     super.paint(g);
     synchronized (labelLock) {
-      if(orientationLabelsOn || sliceLabelOn) {
+      if(orientationLabelsOn || sliceLabelOn || iValueLabelOn) {
         g.setColor(getForeground());
         g.setFont(getFont());
         FontMetrics fm = g.getFontMetrics();
         Dimension displayImageSize = getImageSize();
+	int bottom; // not initialized so compiler will flag if missing a conditional below
         if(orientationLabelsOn) {
 	  int left = displayImageSize.width + FONTPRESPACE;
-	  int bottom = 0;
 	  if(fnorth != null) {
 	    bottom = fm.getAscent();
 	    g.drawString(fnorth, left, bottom);
 	  }
+	  else bottom = 0;
 	  if(fsouth != null) {
 	    // put south near bottom of image but below upper text
 	    bottom = Math.max(displayImageSize.height,
@@ -1044,10 +1170,16 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
 	  }
         }
         else if(sliceLabelOn && (sliceLabel != null)) {
+	  bottom = fm.getAscent() + displayImageSize.height;
 	  g.drawString(sliceLabel,
-          Math.max(0,(displayImageSize.width - fm.stringWidth(sliceLabel))/2),
-		       displayImageSize.height + fm.getAscent());
+		       Math.max(0,(displayImageSize.width - fm.stringWidth(sliceLabel))/2), bottom);
         }
+	else bottom = displayImageSize.height;
+	if(iValueLabelOn && (iValueLabel != null)) {
+	  bottom += fm.getAscent();
+	  g.drawString(iValueLabel,
+		       Math.max(0,(displayImageSize.width - fm.stringWidth(iValueLabel))/2), bottom);
+	}
       }
     }
   }
@@ -1055,11 +1187,14 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
    * Determines the dimension (x, y or z) associated with the slice view.
    *
    * @param inDims		dimensions of data
-   * @param sliceViewMode	TRANSVERSE, CORONAL, or SAGITTAL
+   * @param sliceViewMode	TRANSVERSE, CORONAL, SAGITTAL...
    * @return			dimension number (0, 1, or 2)
    */
   public static int getSliceNumberDimension(CNUDimensions inDims,
 					    int sliceViewMode) {
+    return iiv.data.PrimaryOrthoDataSlicer.getSliceNumberDimension(inDims, sliceViewMode);
+  }
+  /*
     // Determine dimensions associated with slice
     int sliceDim = 2;
     switch (inDims.getOrientation()) {
@@ -1078,6 +1213,7 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
     }
     return sliceDim;
   }
+  */
   /**
    * Calculates the display dimensions for viewing.
    *

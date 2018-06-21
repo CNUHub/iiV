@@ -65,7 +65,15 @@ public class PrimaryOrthoDataSlicer implements CNUDataSlicer {
     return sliceViewMode;
   }
   /**
-   * Returns the dimesnion of slices this data slicer creates.
+   * Returns the slice dimension the data slicer uses.
+   *
+   * @return  the slice dimension the data slicer uses
+   */
+  public int getSliceDimension() {
+    return sliceDim;
+  }
+  /**
+   * Returns the dimension of slices this data slicer creates.
    *
    * @return the slice dimensions this data slicer creates
    */
@@ -216,6 +224,8 @@ public class PrimaryOrthoDataSlicer implements CNUDataSlicer {
    */
   public String toString() {
     StringBuffer sb = new StringBuffer();
+    String class_string=getClass().getName();
+    sb.append("*** class ").append(class_string).append("\n");
     sb.append(super.toString()).append("\n");
     sb.append("inDataDims=");
     if(dims == null) sb.append("null\n");
@@ -227,6 +237,7 @@ public class PrimaryOrthoDataSlicer implements CNUDataSlicer {
     sb.append("sliceDim=").append(sliceDim).append('\n');
     sb.append("sliceDims=").append(sliceDims.toString());
     sb.append("inc=").append(CNUTypes.arrayToString(inc)).append("\n");
+    sb.append("*** end class ").append(class_string).append("\n");
 
     return sb.toString();
   }
@@ -271,7 +282,46 @@ public class PrimaryOrthoDataSlicer implements CNUDataSlicer {
    */
   public static int getSliceNumberDimension(CNUDimensions inDims,
 					    int sliceViewMode) {
+    // note xyz slice view modes don't depend on input dimensions
+    int sliceDim; // don't initialize here so compiler will flag as not intialized if switchess below miss a default
+    switch (sliceViewMode) {
+    case CNUDimensions.XY_SLICE:
+    case CNUDimensions.YX_SLICE:
+      sliceDim = 2;
+      break;
+    case CNUDimensions.YZ_SLICE:
+    case CNUDimensions.ZY_SLICE:
+      sliceDim = 0;
+      break;
+    case CNUDimensions.ZX_SLICE:
+    case CNUDimensions.XZ_SLICE:
+      sliceDim = 1;
+      break;
+    default:
+      switch(((sliceViewMode & 0xFFFF) << 16) | (inDims.getOrientation() & 0xFFFF)) {
+      default:
+      case (CNUDimensions.TRANSVERSE << 16) | CNUDimensions.TRANSVERSE:
+      case (CNUDimensions.CORONAL << 16) | CNUDimensions.CORONAL:
+      case (CNUDimensions.SAGITTAL << 16) | CNUDimensions.SAGITTAL:
+	sliceDim = 2;
+	break;
+      case (CNUDimensions.CORONAL << 16) | CNUDimensions.TRANSVERSE:
+      case (CNUDimensions.TRANSVERSE << 16) | CNUDimensions.CORONAL:
+      case (CNUDimensions.TRANSVERSE << 16) | CNUDimensions.SAGITTAL:
+	sliceDim = 1;
+	break;
+      case (CNUDimensions.SAGITTAL << 16) | CNUDimensions.TRANSVERSE:
+      case (CNUDimensions.SAGITTAL << 16) | CNUDimensions.CORONAL:
+      case (CNUDimensions.CORONAL << 16) | CNUDimensions.SAGITTAL:
+	sliceDim = 0;
+	break;
+      }
+      break;
+    }
+    return sliceDim;
+
     // Determine dimensions associated with slice
+    /*
     int sliceDim = 2;
     // if inDims orientation differs from sliceViewMode need to change
     switch (inDims.getOrientation()) {
@@ -289,6 +339,7 @@ public class PrimaryOrthoDataSlicer implements CNUDataSlicer {
       break;
     }
     return sliceDim;
+    */
   }
   /**
    * Calculates the 2-D slice dimensions.
@@ -301,17 +352,79 @@ public class PrimaryOrthoDataSlicer implements CNUDataSlicer {
 						 int sliceViewMode,
 						 int outType) {
     CNUDimensions outdims = new CNUDimensions();
-    outdims.set2DValues(inDims.xdim(), inDims.ydim(), outType, 0);
+    outdims.setOrientation(sliceViewMode);
+    outdims.setOrientationOrder(inDims.getOrientationOrder());
+    // default should happen below    outdims.set2DValues(inDims.xdim(), inDims.ydim(), outType, 0);
+
+    switch (sliceViewMode) {
+    case CNUDimensions.XY_SLICE:
+      outdims.set2DValues(inDims.xdim(), inDims.ydim(), outType, 0);
+      break;
+    case CNUDimensions.YX_SLICE:
+      outdims.set2DValues(inDims.ydim(), inDims.xdim(), outType, 0);
+      break;
+    case CNUDimensions.YZ_SLICE:
+      outdims.set2DValues(inDims.ydim(), inDims.zdim(), outType, 0);
+      break;
+    case CNUDimensions.ZY_SLICE:
+      outdims.set2DValues(inDims.zdim(), inDims.ydim(), outType, 0);
+      break;
+    case CNUDimensions.ZX_SLICE:
+      outdims.set2DValues(inDims.zdim(), inDims.xdim(), outType, 0);
+      break;
+    case CNUDimensions.XZ_SLICE:
+      outdims.set2DValues(inDims.xdim(), inDims.zdim(), outType, 0);
+      break;
+    default:
+      switch(((sliceViewMode & 0xFFFF) << 16) | (inDims.getOrientation() & 0xFFFF)) {
+      default: // keeps input orientation when inDims is a slice orientation
+      case (CNUDimensions.TRANSVERSE << 16) | CNUDimensions.TRANSVERSE:
+      case (CNUDimensions.CORONAL << 16) | CNUDimensions.CORONAL:
+      case (CNUDimensions.SAGITTAL << 16) | CNUDimensions.SAGITTAL:
+	outdims.set2DValues(inDims.xdim(), inDims.ydim(), outType, 0);
+	break;
+      case (CNUDimensions.CORONAL << 16) | CNUDimensions.TRANSVERSE:
+      case (CNUDimensions.TRANSVERSE << 16) | CNUDimensions.CORONAL:
+	outdims.set2DValues(inDims.xdim(), inDims.zdim(), outType, 0);
+	break;
+      case (CNUDimensions.SAGITTAL << 16) | CNUDimensions.TRANSVERSE:
+	outdims.set2DValues(inDims.ydim(), inDims.zdim(), outType, 0);
+	break;
+      case (CNUDimensions.SAGITTAL << 16) | CNUDimensions.CORONAL:
+      case (CNUDimensions.CORONAL << 16) | CNUDimensions.SAGITTAL:
+	outdims.set2DValues(inDims.zdim(), inDims.ydim(), outType, 0);
+	break;
+      case (CNUDimensions.TRANSVERSE << 16) | CNUDimensions.SAGITTAL:
+	outdims.set2DValues(inDims.zdim(), inDims.xdim(), outType, 0);
+	break;
+      }
+      break;
+    }
+
     // if inDims orientation differs from sliceViewMode need to change
+    /*
     switch (inDims.getOrientation()) {
     case CNUDimensions.TRANSVERSE:      // x=R-L, y=P-A, z=S-I
-      if(sliceViewMode == CNUDimensions.CORONAL)
-	outdims.set2DValues(inDims.xdim(), inDims.zdim(),
-			    outType, 0);
-      else if(sliceViewMode == CNUDimensions.SAGITTAL)
-	outdims.set2DValues(inDims.ydim(), inDims.zdim(),
-			    outType, 0);
+      if(sliceViewMode == CNUDimensions.CORONAL) // sliceDim=1; order=x,z,y
+	outdims.set2DValues(inDims.xdim(), inDims.zdim(), outType, 0);
+      else if(sliceViewMode == CNUDimensions.SAGITTAL) // sliceDim=0; order=y,z,x
+	outdims.set2DValues(inDims.ydim(), inDims.zdim(), outType, 0);
       break;
+    case CNUDimensions.CORONAL:      // x=R-L, y=S-I, z=P-A
+      if(sliceViewMode == CNUDimensions.SAGITTAL) // sliceDim=1 order=x,z,y
+	outdims.set2DValues(inDims.xdim(), inDims.zdim(), outType, 0);
+      else if(sliceViewMode == CNUDimensions.TRANSVERSE) // sliceDim=0 order=z,y,x
+	outdims.set2DValues(inDims.zdim(), inDims.ydim(), outType, 0);
+      break;
+    case CNUDimensions.SAGITTAL:      // x=P-A, y=S-I, z=R-L
+      if(sliceViewMode == CNUDimensions.TRANSVERSE) // sliceDim=1 order=z,x,y
+	outdims.set2DValues(inDims.zdim(), inDims.xdim(), outType, 0);
+      else if(sliceViewMode == CNUDimensions.CORONAL) // sliceDim=0 order=z,y,x
+	outdims.set2DValues(inDims.zdim(), inDims.ydim(), outType, 0);
+      break;
+    }
+    */
+      /* these were swapped?
     case CNUDimensions.CORONAL:      // x=R-L, y=S-I, z=P-A
       if(sliceViewMode == CNUDimensions.SAGITTAL)
 	outdims.set2DValues(inDims.zdim(), inDims.ydim(),
@@ -320,15 +433,8 @@ public class PrimaryOrthoDataSlicer implements CNUDataSlicer {
 	outdims.set2DValues(inDims.xdim(), inDims.zdim(),
 			    outType, 0);
       break;
-    case CNUDimensions.SAGITTAL:      // x=P-A, y=S-I, z=R-L
-      if(sliceViewMode == CNUDimensions.TRANSVERSE)
-	outdims.set2DValues(inDims.zdim(), inDims.xdim(),
-			    outType, 0);
-      else if(sliceViewMode == CNUDimensions.CORONAL)
-	outdims.set2DValues(inDims.zdim(), inDims.ydim(),
-			    outType, 0);
-      break;
     }
+      */
     return outdims;
   }
   /** 
@@ -341,35 +447,87 @@ public class PrimaryOrthoDataSlicer implements CNUDataSlicer {
   public static int[] getInputToSliceIncrements(CNUDimensions inDims,
 						  int sliceViewMode)
   {
-    int [] inInc = inDims.getIncrements();
+    int [] inInc = inDims.getIncrements(); // initialized with input increments
+
+    int tmp;
+    switch (sliceViewMode) {
+    case CNUDimensions.XY_SLICE:
+      // increments same as inDims
+      break;
+    case CNUDimensions.YX_SLICE:
+      tmp = inInc[0]; inInc[0] = inInc[1]; inInc[1] = tmp;
+      break;
+    case CNUDimensions.YZ_SLICE:
+      tmp = inInc[0]; inInc[0] = inInc[1]; inInc[1] = inInc[2]; inInc[2] = tmp;
+      break;
+    case CNUDimensions.ZY_SLICE:
+      tmp = inInc[0]; inInc[0] = inInc[2]; inInc[2] = tmp;
+      break;
+    case CNUDimensions.ZX_SLICE:
+      tmp = inInc[0]; inInc[0] = inInc[2]; inInc[2] = inInc[1]; inInc[1] = tmp;
+      break;
+    case CNUDimensions.XZ_SLICE:
+      tmp = inInc[1]; inInc[1] = inInc[2]; inInc[2] = tmp;
+      break;
+    default:
+      switch(((sliceViewMode & 0xFFFF) << 16) | (inDims.getOrientation() & 0xFFFF)) {
+      default:
+      case (CNUDimensions.TRANSVERSE << 16) | CNUDimensions.TRANSVERSE:
+      case (CNUDimensions.CORONAL << 16) | CNUDimensions.CORONAL:
+      case (CNUDimensions.SAGITTAL << 16) | CNUDimensions.SAGITTAL:
+	// increments same as inDims
+	break;
+      case (CNUDimensions.CORONAL << 16) | CNUDimensions.TRANSVERSE:
+      case (CNUDimensions.TRANSVERSE << 16) | CNUDimensions.CORONAL:
+	tmp = inInc[1]; inInc[1] = inInc[2]; inInc[2] = tmp;
+	break;
+      case (CNUDimensions.SAGITTAL << 16) | CNUDimensions.TRANSVERSE:
+	tmp = inInc[0]; inInc[0] = inInc[1]; inInc[1] = inInc[2]; inInc[2] = tmp;
+	break;
+      case (CNUDimensions.SAGITTAL << 16) | CNUDimensions.CORONAL:
+      case (CNUDimensions.CORONAL << 16) | CNUDimensions.SAGITTAL:
+	tmp = inInc[0]; inInc[0] = inInc[2]; inInc[2] = tmp;
+	break;
+      case (CNUDimensions.TRANSVERSE << 16) | CNUDimensions.SAGITTAL:
+        tmp = inInc[0]; inInc[0] = inInc[2]; inInc[2] = inInc[1]; inInc[1] = tmp;
+	break;
+      }
+      break;
+    }
+    return inInc;
+
+    /*
     switch (inDims.getOrientation()) {
     case CNUDimensions.TRANSVERSE:      // x=R-L, y=P-A, z=S-I
-      if(sliceViewMode == CNUDimensions.CORONAL) {
+      if(sliceViewMode == CNUDimensions.CORONAL) { // sliceDim=1; order=x,z,y
 	int tmp = inInc[1]; inInc[1] = inInc[2]; inInc[2] = tmp;
       }
-      else if(sliceViewMode == CNUDimensions.SAGITTAL) {
+      else if(sliceViewMode == CNUDimensions.SAGITTAL) { // sliceDim=0; order=y,z,x
 	int tmp = inInc[0]; inInc[0] = inInc[1];
 	inInc[1] = inInc[2]; inInc[2] = tmp;
       }
       break;
     case CNUDimensions.CORONAL:      // x=R-L, y=S-I, z=P-A
-      if(sliceViewMode == CNUDimensions.SAGITTAL) {
-	int tmp = inInc[0]; inInc[0] = inInc[2]; inInc[2] = tmp;
-      }
-      else if(sliceViewMode == CNUDimensions.TRANSVERSE) {
+      if(sliceViewMode == CNUDimensions.SAGITTAL) { // sliceDim=1 order=x,z,y
 	int tmp = inInc[1]; inInc[1] = inInc[2]; inInc[2] = tmp;
+	//	int tmp = inInc[0]; inInc[0] = inInc[2]; inInc[2] = tmp;
+      }
+      else if(sliceViewMode == CNUDimensions.TRANSVERSE) { // sliceDim=0 order=z,y,x
+	int tmp = inInc[0]; inInc[0] = inInc[2]; inInc[2] = tmp;
+	//	int tmp = inInc[1]; inInc[1] = inInc[2]; inInc[2] = tmp;
       }
       break;
     case CNUDimensions.SAGITTAL:      // x=P-A, y=S-I, z=R-L
-      if(sliceViewMode == CNUDimensions.TRANSVERSE) {
+      if(sliceViewMode == CNUDimensions.TRANSVERSE) { // sliceDim=1 order=z,x,y
 	int tmp = inInc[0]; inInc[0] = inInc[2];
 	inInc[2] = inInc[1]; inInc[1] = tmp;
       }
-      else if(sliceViewMode == CNUDimensions.CORONAL) {
+      else if(sliceViewMode == CNUDimensions.CORONAL) { // sliceDim=0 order=z,y,x
 	int tmp = inInc[0]; inInc[0] = inInc[2]; inInc[2] = tmp;
       }
       break;
     }
     return inInc;
+    */
   }
 }

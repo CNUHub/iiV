@@ -38,7 +38,7 @@ implements ShowStatus
   /** Holds the program title */
   public static String programTitle = "iiV";
   /** Holds the current version number */
-  public static String version = "1.187";
+  public static String version = "1.19";
   /** Holds the current help version number */
   public static String helpVersion = "1181";
   /** specifies default scaling when converting data to a displayable image */
@@ -286,8 +286,8 @@ implements ShowStatus
       "Author:  Joel T. Lee\r\n" +
       "Group:  Cognitive Neuroimaging Unit\r\n" +
       "Institute:  VA Medical Center/University of Minnesota\r\n" +
-      "Address:  1 Veterans Drive, Minneapolis, MN  55417\r\n" +
-      "Home Page:  http://james.psych.umn.edu/\r\n";
+      "Address:  1 Veterans Drive, Minneapolis, MN  55417\r\n";
+    //      "Home Page:  http://james.psych.umn.edu/\r\n";
   }
   /**
    * Gets parameter information.
@@ -2751,6 +2751,36 @@ implements ShowStatus
    */
   public boolean getOrientationLabelsOn() {
     return getCNUViewerActions().orientationLabelsCheckboxAction.getCheckboxButtonModel().isSelected();
+  }
+  /**
+   * Gets the iValue labels view mode.
+   *
+   * @return	<code>true</code> for viewing iValue labels,
+   *		<code>false</code> otherwise
+   */
+  public boolean getIValueLabelOn() {
+    return getCNUViewerActions().iValueLabelsCheckboxAction.getCheckboxButtonModel().isSelected();
+  }
+  /**
+   * Sets the iValue labels view mode.
+   *
+   * @param iValueLabelOn	<code>true</code> to view iValue labels,
+   *				<code>false</code> otherwise
+   */
+  public void setIValueLabelOn(final boolean iValueLabelOn) {
+    if(! SwingUtilities.isEventDispatchThread()) {
+      SwingUtilities.invokeLater( new Runnable() {
+	public void run() {
+	  setIValueLabelOn(iValueLabelOn);
+	}
+      } );
+    }
+    else {
+      CNUViewerActions cnuviewerActions = getCNUViewerActions();
+      ButtonModel sbm =
+	cnuviewerActions.iValueLabelsCheckboxAction.getCheckboxButtonModel();
+      if(sbm.isSelected() != iValueLabelOn) sbm.setSelected(iValueLabelOn);
+    }
   }
   /**
    * Sets the default vertical flip mode and update corresponding check box.

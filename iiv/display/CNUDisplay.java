@@ -256,6 +256,8 @@ public class CNUDisplay extends JComponent
   public final static int FILTER_SAMPLING = 22;
   /** flag for applying data slicer */
   public final static int DATA_SLICER = 23;
+  /** flag for applying iValue increment */
+  public final static int INCREMENT_IVALUE = 24;
   public final static String getApplyFunctionName(int function) {
       switch(function) {
       default:
@@ -304,6 +306,10 @@ public class CNUDisplay extends JComponent
 	  return "number format";
       case FILTER_SAMPLING:
 	  return "filter sampling";
+      case DATA_SLICER:
+	  return "data slicer";
+      case INCREMENT_IVALUE:
+	  return "increment ivalue";
       }
   }
 
@@ -382,7 +388,8 @@ public class CNUDisplay extends JComponent
       }
       incrementStep = Math.abs(incrementStep);
       if(c == '-') incrementStep = -incrementStep;
-      incrementSlices(incrementStep);
+      if(evt.isAltDown())incrementIValue(incrementStep);
+      else incrementSlices(incrementStep);
     }
     else {
       // step string canceled if other characters typed
@@ -1250,6 +1257,7 @@ public class CNUDisplay extends JComponent
     CNUScale.setDefaultScale(sc);
     // Get the current display values
     boolean sliceLabelOn = getCNUViewer().getSliceLabelOn();
+    boolean iValueLabelOn = getCNUViewer().getIValueLabelOn();
     boolean orientationLabelsOn = getCNUViewer().getOrientationLabelsOn();
     // Create Single images for each slice and add them to this display
     Vector<Object> addList = new Vector<Object>();
@@ -1263,6 +1271,7 @@ public class CNUDisplay extends JComponent
 					   slice, iValue, sc);
 	      si.setSliceLabelOn(sliceLabelOn);
 	      si.setOrientationLabelsOn(orientationLabelsOn);
+	      si.setIValueLabelOn(iValueLabelOn);
 	      addList.addElement(si);
 	  }
       }
@@ -1273,6 +1282,7 @@ public class CNUDisplay extends JComponent
 					   iValue, sc);
 	  ipi.setSliceLabelOn(sliceLabelOn);
 	  ipi.setOrientationLabelsOn(orientationLabelsOn);
+	  ipi.setIValueLabelOn(iValueLabelOn);
 	  addList.addElement(ipi);
       }
     }
@@ -2231,6 +2241,15 @@ public class CNUDisplay extends JComponent
     apply(INCREMENT);
   }
   /**
+   * Increments slice of selected components.
+   *
+   * @param increment	amount to increment slice by
+   */
+  public void incrementIValue( int increment ) {
+    setIncrementStep(increment);
+    apply(INCREMENT_IVALUE);
+  }
+  /**
    * Updates flips of already displayed images.
    *
    * @param flipV	vertical flip
@@ -2666,6 +2685,16 @@ public class CNUDisplay extends JComponent
 	else if(comp instanceof ComponentGroup)
 	  applyToComponentGroup( (ComponentGroup) comp, function );
         break;
+    case INCREMENT_IVALUE:
+        if(comp instanceof SingleImg) {
+	  SingleImg singleImg = (SingleImg) comp;
+	  int oldIValue = singleImg.getIValue();
+	  int newIValue = oldIValue + getIncrementStep();
+	  setIValue(singleImg, newIValue);
+        }
+	else if(comp instanceof ComponentGroup)
+	  applyToComponentGroup( (ComponentGroup) comp, function );
+        break;
     case SCALE:
         if(comp instanceof ScaleInterface) {
 	  ScaleInterface si = (ScaleInterface) comp;
@@ -2716,27 +2745,51 @@ public class CNUDisplay extends JComponent
 	  SingleImg si = (SingleImg) comp;
           boolean oldSliceLabelOn = si.getSliceLabelOn();
           boolean oldOrientationLabelsOn = si.getOrientationLabelsOn();
+          boolean oldIValueLabelOn = si.getIValueLabelOn();
           boolean newSliceLabelOn = getCNUViewer().getSliceLabelOn();
-          boolean newOrientationLabelsOn =
-	    getCNUViewer().getOrientationLabelsOn();
-          if( (oldSliceLabelOn == newSliceLabelOn) &&
+          boolean newOrientationLabelsOn = getCNUViewer().getOrientationLabelsOn();
+          boolean newIValueLabelOn = getCNUViewer().getIValueLabelOn();
+	  if( (oldSliceLabelOn == newSliceLabelOn) &&
+	      (oldIValueLabelOn == newIValueLabelOn) &&
 	      (oldOrientationLabelsOn == newOrientationLabelsOn) ) break;
 
-	  si.setSliceAndOrientationLabels(newSliceLabelOn,
-					newOrientationLabelsOn);
-	  undoParams = new Class[2];
-	  undoParams[0] = Boolean.TYPE; undoParams[1] = Boolean.TYPE;
-	  undoArgs = new Object[2];
-	  undoArgs[0] = new Boolean(oldSliceLabelOn);
-	  undoArgs[1] = new Boolean(oldOrientationLabelsOn);
-	  undo = new DoCommand(si, "setSliceAndOrientationLabels",
-			     undoParams, undoArgs);
-	  redoArgs = new Object[2];
-	  redoArgs[0] = new Boolean(newSliceLabelOn);
-	  redoArgs[1] = new Boolean(newOrientationLabelsOn);
-	  redo = new DoCommand(si, "setSliceAndOrientationLabels",
-			       undoParams, redoArgs);
-	  ur.addUndo(undo, redo, post, si, getApplyFunctionName(function));
+	  undoParams = new Class[1];
+	  undoParams[0] = Boolean.TYPE;
+	  undoArgs = new Object[1];
+	  redoArgs = new Object[1];
+
+	  ur.startSteps();
+          if( oldSliceLabelOn != newSliceLabelOn) {
+	    si.setSliceLabelOn(newSliceLabelOn);
+	    undoArgs[0] = new Boolean(oldSliceLabelOn);
+	    redoArgs[0] = new Boolean(newSliceLabelOn);
+	    undo = new DoCommand(si, "setSliceLabelOn",
+				 undoParams, undoArgs);
+	    redo = new DoCommand(si, "setSliceLabelOn",
+				 undoParams, redoArgs);
+	    ur.addUndo(undo, redo, post, si, getApplyFunctionName(function));
+	  }
+          if( oldIValueLabelOn != newIValueLabelOn) {
+	    si.setIValueLabelOn(newIValueLabelOn);
+	    undoArgs[0] = new Boolean(oldIValueLabelOn);
+	    redoArgs[0] = new Boolean(newIValueLabelOn);
+	    undo = new DoCommand(si, "setIValueLabelOn",
+				 undoParams, undoArgs);
+	    redo = new DoCommand(si, "setIValueLabelOn",
+				 undoParams, redoArgs);
+	    ur.addUndo(undo, redo, post, si, getApplyFunctionName(function));
+	  }
+          if( oldOrientationLabelsOn != newOrientationLabelsOn) {
+	    si.setOrientationLabelsOn(newIValueLabelOn);
+	    undoArgs[0] = new Boolean(oldOrientationLabelsOn);
+	    redoArgs[0] = new Boolean(newOrientationLabelsOn);
+	    undo = new DoCommand(si, "setOrientationLabelsOn",
+				 undoParams, undoArgs);
+	    redo = new DoCommand(si, "setOrientationLabelsOn",
+				 undoParams, redoArgs);
+	    ur.addUndo(undo, redo, post, si, getApplyFunctionName(function));
+	  }
+	  ur.finishUndoSteps(getApplyFunctionName(function));
         }
 	else if( (comp instanceof DisplayColorMap) ||
 	  (comp instanceof DisplayColorMapQuilt) ){
@@ -4354,7 +4407,7 @@ public class CNUDisplay extends JComponent
    * Sets a SliceNumbering objects slice number while
    * creating an undo/redo history.
    *
-   * @param sliceNumbering	object to change slice number to
+   * @param sliceNumbering	object to change slice number of
    * @param newSlice	new slice number
    */
   public void setSlice(SliceNumbering sliceNumbering, int newSlice) {
@@ -4376,6 +4429,35 @@ public class CNUDisplay extends JComponent
 	  comp.repaint();
 	}
 	getUndoRedo().addUndo(undo, redo, null, comp, "set slice");
+      }
+    }
+  }
+  /**
+   * Sets a SingleImg objects iValue number while
+   * creating an undo/redo history.
+   *
+   * @param singleImg	object to change iValue of
+   * @param newIValue	new iValue number
+   */
+  public void setIValue(SingleImg singleImg, int newIValue) {
+    int oldIValue = singleImg.getIValue();
+    if(oldIValue != newIValue) {
+      singleImg.setIValue( newIValue );
+      newIValue = singleImg.getIValue();
+      if(oldIValue != newIValue) {
+	Class[] undoParams = new Class[1]; undoParams[0] = Integer.TYPE;
+	Object[] undoArgs = new Object[1]; undoArgs[0] = new Integer(oldIValue);
+	DoCommand undo =
+	  new DoCommand(singleImg, "setIValue", undoParams, undoArgs);
+	Object[] redoArgs = new Object[1]; redoArgs[0] = new Integer(newIValue);
+	DoCommand redo =
+	  new DoCommand(singleImg, "setIValue", undoParams, redoArgs);
+	Component comp = null;
+	if(singleImg instanceof Component) {
+	  comp = (Component) singleImg;
+	  comp.repaint();
+	}
+	getUndoRedo().addUndo(undo, redo, null, comp, "set iValue");
       }
     }
   }

@@ -78,7 +78,9 @@ public class NiftiQFormCoordinateMap  extends AffineCoordinateMap {
    */
   public String toString() {
     StringBuffer sb = new StringBuffer();
-    sb.append("*** class").append(getClass().getName()).append(" =\n");
+    String class_string=getClass().getName();
+    sb.append("*** class ").append(class_string).append(" ***\n");
+    sb.append(super.toString());
     sb.append("name=").append(name).append("\n");
     sb.append("quatern_a(calculated)=").append(a).append("\n");
     sb.append("quatern_b=").append(b);
@@ -92,6 +94,7 @@ public class NiftiQFormCoordinateMap  extends AffineCoordinateMap {
     sb.append("{ {").append(rotationMatrix[0][0]).append(",").append(rotationMatrix[0][1]).append(",").append(rotationMatrix[0][2]).append("}\n");
     sb.append("  {").append(rotationMatrix[1][0]).append(",").append(rotationMatrix[1][1]).append(",").append(rotationMatrix[1][2]).append("}\n");
     sb.append("  {").append(rotationMatrix[2][0]).append(",").append(rotationMatrix[2][1]).append(",").append(rotationMatrix[2][2]).append("} }\n");
+    sb.append("*** end class ").append(class_string).append(" ***\n");
 
     return sb.toString();
   }

@@ -102,6 +102,17 @@ public class AffineCoordinateMap implements CoordinateMap, iiVScriptable {
     return name;
   }
   /**
+   * Gets the matrix value at the given indices.
+   *
+   * @param row row to get value for
+   * @param column column to get value for
+   * @return value from matrix at given row and column
+   */
+  public double getMatrixValue(int row, int column) {
+    if(affineMatrix != null) return affineMatrix.value(row,column);
+    else return Double.NaN;
+  }
+  /**
    * Gets the units the three shift components of the affine matrix are in.
    *
    * @return shift units (PIXELS or METERS)
@@ -221,7 +232,7 @@ public class AffineCoordinateMap implements CoordinateMap, iiVScriptable {
    */
   public String toString() {
     StringBuffer sb = new StringBuffer();
-    sb.append("*** class ").append(getClass().getName()).append(" =\n");
+    sb.append("*** Affine class ").append(getName()).append(" =\n");
     sb.append("name=").append(name).append("\n");
     sb.append("shiftUnits=").append(units_to_string(getShiftUnits())).append("\n");
     sb.append("affineMatrix=");

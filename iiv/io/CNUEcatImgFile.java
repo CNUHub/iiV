@@ -173,8 +173,11 @@ public class CNUEcatImgFile extends CNUImgFile {
       // need to track quantification factors
     float[] quantification = new float[num_frames * num_planes];
     int quantIndex = 0;
-    float maxQuantification = 1;
-    float minQuantification = 1;
+    // max/min values should get replaced unless all quant factors are zero
+    double maxQuantification = Double.MIN_VALUE;
+    double minQuantification = Double.MAX_VALUE;
+    // keep quantized maximum values with CopyConvertInfo
+    CNUEcatHeader.CopyConvertInfo copyConvertInfo = null;
     int nxtframematblk = CNUEcatHeader.MatFirstDirBlk;
     for(int i = 0; i < num_frames; i++) {
       // read the frame matrix directory assumes it is continuous
@@ -255,12 +258,18 @@ public class CNUEcatImgFile extends CNUImgFile {
 	        ecatHeader.getSubHdrInfo(), subHdrBlock);
 	    break;
 	  }
+	  if((trouble_shoot_flags & 1) != 0) {
+	    System.err.println("dataZ="+dataZ+" quant="+quantification[quantIndex]);
+	  }
 	  // Satoshi tends to send zeroed planes to
 	  // float.MAX_VALUE/2=1.7014118E38 which screws up the
 	  // new quantification factor
 	  // guard against outrageous quantification values
-	  if( Math.abs(quantification[quantIndex]) >= Float.MAX_VALUE/4 )
-		quantification[quantIndex] = 0.0f;
+	  double absQuant=Math.abs(quantification[quantIndex]);
+	  if( absQuant >= Float.MAX_VALUE/4 ) {
+	    quantification[quantIndex] = 0.0f;
+	    absQuant = 0.0;
+	  }
 	  // get the data type for this plane
 	  ecatType = ecatHeader.getIntValue("data_type",
 	               ecatHeader.getSubHdrInfo(), subHdrBlock);
@@ -275,29 +284,24 @@ public class CNUEcatImgFile extends CNUImgFile {
 	    setDimensions(dims);
 	    zIncrement = dims.xdim() * dims.ydim();
 	    endPlaneOffset = outOffset + zIncrement;
-	    // initialize max and min quantification factors
-	    maxQuantification = quantification[quantIndex];
-	    minQuantification = quantification[quantIndex];
-	  } else {
-	    // keep running max and min quantification factors
-	    maxQuantification =
-	      Math.max(maxQuantification, quantification[quantIndex]);
-	    minQuantification =
-	      Math.min(minQuantification, quantification[quantIndex]);
-          }
-	  // increment index for next time we store a quantification factor
-	  quantIndex++;
+	  }
+	  // keep running max and min quantification factors - only non-zero
+	  if(absQuant > maxQuantification) maxQuantification = absQuant;
+	  else if((absQuant < minQuantification) && (absQuant > Float.MIN_NORMAL)) minQuantification = absQuant;
 	  // now read the actual data and transfer it to the dataArray
 	  while(nextReadBlk <= endBlock[dataZ]) {
 	    dataBlock = readBlock(inS, dataBlock, 0, CNUEcatHeader.MatBLKSIZE);
 	    nextReadBlk++;
             convertCount = dataBlock.length/ecatWordBytes;
 	    convertCount = Math.min(convertCount, endPlaneOffset-outOffset);
-	    outOffset = CNUEcatHeader.copyConvertBlock
-		  (dataBlock, 0, ecatType,
-		  dataArray, outOffset, dims.getType(),
-		  convertCount);
+	    // outOffset = CNUEcatHeader.copyConvertBlock(dataBlock, 0, ecatType, dataArray, outOffset, dims.getType(), convertCount);
+	    copyConvertInfo = CNUEcatHeader.copyConvertBlock(copyConvertInfo,dataBlock, 0, ecatType,
+							     dataArray, outOffset, dims.getType(), convertCount,
+							     quantification[quantIndex]);
+	    outOffset = copyConvertInfo.currentOffset;
 	  }
+	  // increment index for next time we store joba quantification factor
+	  quantIndex++;
 	  dataZ++;
 	  endPlaneOffset = outOffset + zIncrement;
         } // end if(nextReadBlk == startBlock[dataZ])
@@ -311,16 +315,59 @@ public class CNUEcatImgFile extends CNUImgFile {
     } // end for(i = 0; i < num_frames ...
 
     // set a single quantification factor for all data
-    float newQuantification = maxQuantification;
-    if(Math.abs(newQuantification) < Math.abs(minQuantification))
-      newQuantification = minQuantification;
+    //    float newQuantification = maxQuantification;
+    // keep min quantification to maximize resolution - old method keeping max quant allowed max range of values but reduced resolution
+    // instead look at actual max values and update type if needed for storage
+    double newQuantification = minQuantification;
+    // quants are already abs
+    //if(Math.abs(newQuantification) < Math.abs(minQuantification))
+    // newQuantification = minQuantification;
     // don't like negative quantifications
-    if(newQuantification < 0.0f) newQuantification = -newQuantification;
-    // don't like zero quantification values
-    if(newQuantification == 0.0f) newQuantification = 1.0f;
+    //if(newQuantification < 0.0f) newQuantification = -newQuantification;
+
+    // don't like zero quantification values - only possible if all quants zero
+    if(newQuantification < Double.MIN_VALUE) newQuantification = 1.0f;
     setFactor(newQuantification);
     if( maxQuantification != minQuantification ) {
-    // adjust all planes to the single factor
+      // find needed output dataType
+      int dataType = dims.getType();
+      while((dataType != CNUTypesConstants.DOUBLE) && ((CNUTypes.maxValue(dataType) * newQuantification) < copyConvertInfo.maxQuantified)) {
+	switch(dataType) {
+	case CNUTypesConstants.BYTE:
+	  dataType=CNUTypesConstants.SHORT;
+	  break;
+	case CNUTypesConstants.UNSIGNED_BYTE:
+	  dataType=CNUTypesConstants.UNSIGNED_SHORT;
+	  break;
+	case CNUTypesConstants.SHORT:
+	  dataType=CNUTypesConstants.INTEGER;
+	  break;
+	case CNUTypesConstants.UNSIGNED_SHORT:
+	  dataType=CNUTypesConstants.UNSIGNED_INTEGER;
+	  break;
+	case CNUTypesConstants.INTEGER:
+	case CNUTypesConstants.UNSIGNED_INTEGER:
+	  dataType=CNUTypesConstants.LONG;
+	  break;
+	case CNUTypesConstants.LONG:
+	case CNUTypesConstants.FLOAT:
+	case CNUTypesConstants.DOUBLE:
+	default:
+	  dataType=CNUTypesConstants.DOUBLE;
+	  break;
+	}
+      }
+      
+      Object originalDataArray = dataArray;
+      int originalType = dims.getType();
+      if(dataType != originalType) {
+	// need to re-initialize dims and dataArray
+	dims.setType(dataType);
+	this.initDataArray(dims);  // initialize the data array
+	dataArray = getDataArray();
+	setDimensions(dims);
+      }
+      // adjust all planes to the single factor
       quantIndex = 0;
       int planeLength = dims.xdim() * dims.ydim();
       int planeOffset = 0;
@@ -329,12 +376,13 @@ public class CNUEcatImgFile extends CNUImgFile {
         for(int z = 0; z < num_planes; z++, quantIndex++,
 		planeOffset += planeLength) {
 	  sc.setScaleFactor( quantification[quantIndex]/newQuantification );
-	  CNUTypes.copyArray( dataArray, planeOffset, dims.getType(), 1,
-		  dataArray, planeOffset, dims.getType(), planeLength, sc);
+	  CNUTypes.copyArray(originalDataArray, planeOffset, originalType, 1,
+		  dataArray, planeOffset, dataType, planeLength, sc);
         }
       }
-    }
+    } // end if( maxQuantification != minQuantification )
   } // end ReadImg
+  private static int trouble_shoot_flags=0;
   /**
    * Reads and prints an ECAT header as a standalone java program.
    *
@@ -342,6 +390,7 @@ public class CNUEcatImgFile extends CNUImgFile {
    */
   static public void main(String[] args) throws IOException {
     try {
+      trouble_shoot_flags=1;
       CNUEcatImgFile img = new CNUEcatImgFile(args[0]);
       img.readData();
       System.out.println(img.toString());

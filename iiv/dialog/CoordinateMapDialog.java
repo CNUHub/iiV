@@ -64,6 +64,39 @@ implements CNUFileObject, ActionListener, ItemListener {
   private JButton applyMapB = new JButton("Apply Coordinate Map");
   private JButton dismissB = new JButton("Dismiss");
 
+  private JCheckBox enableAffineEditsCB = new JCheckBox("Enable Edits", false);
+  private JButton acceptAffineB = new JButton("Accept");
+  private JComboBox affineOriginUnitsCH = new JComboBox();
+  private JTextField affineTF11 = new JTextField();
+  private JTextField affineTF12 = new JTextField();
+  private JTextField affineTF13 = new JTextField();
+  private JTextField affineTF14 = new JTextField();
+  private JTextField affineTF21 = new JTextField();
+  private JTextField affineTF22 = new JTextField();
+  private JTextField affineTF23 = new JTextField();
+  private JTextField affineTF24 = new JTextField();
+  private JTextField affineTF31 = new JTextField();
+  private JTextField affineTF32 = new JTextField();
+  private JTextField affineTF33 = new JTextField();
+  private JTextField affineTF34 = new JTextField();
+  private JTextField affineTF41 = new JTextField();
+  private JTextField affineTF42 = new JTextField();
+  private JTextField affineTF43 = new JTextField();
+  private JTextField affineTF44 = new JTextField();
+  private JTextField affineTFarray[][] = {
+    { affineTF11, affineTF12, affineTF13, affineTF14 },
+    { affineTF21, affineTF22, affineTF23, affineTF24 },
+    { affineTF31, affineTF32, affineTF33, affineTF34 },
+    { affineTF41, affineTF42, affineTF43, affineTF44 }
+  };
+  private AffineCoordinateMap displayedACM = null;
+  private String displayedTextValues[][] = {
+    { "", "", "", "" },
+    { "", "", "", "" },
+    { "", "", "", "" },
+    { "", "", "", "" }
+  };
+  private int displayedAffineOriginUnits = CoordinateMap.METERS;
   private XYZDouble displayedOrigin = null;
   private String displayedOriginXText = "";
   private String displayedOriginYText = "";
@@ -169,6 +202,7 @@ implements CNUFileObject, ActionListener, ItemListener {
     grid.add(originZTF);
     originUnitsCH.addItem("pixels");
     originUnitsCH.addItem("millimeters");
+    originUnitsCH.addItem("meters");
     grid.add(originUnitsCH);
 
     grid.add(new JLabel("Scale:  "));
@@ -191,6 +225,49 @@ implements CNUFileObject, ActionListener, ItemListener {
     grid.add(rotationUnitsCH);
     rotationUnitsCH.addItemListener(this);
 
+
+
+
+
+    grid = new Container() {};
+    grid.setLayout(new GridLayout(0, 4, 4, 3));
+    box = Box.createHorizontalBox();
+    contentPane.add(box);
+    box.add(Box.createHorizontalStrut(5));
+    box.add(grid);
+    box.add(Box.createHorizontalGlue());
+    box.add(Box.createHorizontalStrut(5));
+
+    grid.add(new JLabel("Affine Matrix:  "));
+    grid.add(enableAffineEditsCB);
+    enableAffineEditsCB.addItemListener(this);
+    grid.add(acceptAffineB);
+    acceptAffineB.addActionListener(this);
+    affineOriginUnitsCH.addItem("pixels");
+    affineOriginUnitsCH.addItem("millimeters");
+    affineOriginUnitsCH.addItem("meters");
+    grid.add(affineOriginUnitsCH);
+
+    grid.add(affineTF11);
+    grid.add(affineTF12);
+    grid.add(affineTF13);
+    grid.add(affineTF14);
+    //    grid.add(Box.createHorizontalGlue());
+    grid.add(affineTF21);
+    grid.add(affineTF22);
+    grid.add(affineTF23);
+    grid.add(affineTF24);
+    //    grid.add(Box.createHorizontalGlue());
+    grid.add(affineTF31);
+    grid.add(affineTF32);
+    grid.add(affineTF33);
+    grid.add(affineTF34);
+    //    grid.add(Box.createHorizontalGlue());
+    grid.add(affineTF41);
+    grid.add(affineTF42);
+    grid.add(affineTF43);
+    grid.add(affineTF44);
+
     box = Box.createHorizontalBox();
     contentPane.add(box);
     box.add(Box.createHorizontalStrut(5));
@@ -200,6 +277,7 @@ implements CNUFileObject, ActionListener, ItemListener {
     box.add(Box.createHorizontalStrut(5));
 
     setEnableEdits(false);
+    setEnableAffineEdits(false);
     updateFields();
     contentPane.add(Box.createVerticalStrut(5));
 
@@ -271,7 +349,9 @@ implements CNUFileObject, ActionListener, ItemListener {
     XYZDouble scale = null;
     XYZDouble rotation = null;
     CoordinateMap coorM = getCoordinateMap();
+    AffineCoordinateMap ACM = null;
     LinearCoordinateMap LCM = null;
+    if(coorM instanceof AffineCoordinateMap) ACM = (AffineCoordinateMap) coorM;
     if(coorM instanceof LinearCoordinateMap) LCM = (LinearCoordinateMap) coorM;
     else setEnableEdits(false);
     if(LCM != null) {
@@ -283,11 +363,30 @@ implements CNUFileObject, ActionListener, ItemListener {
     setOriginFields(origin, originUnits);
     setScaleFields(scale);
     setRotationFields(rotation);
+    setAffineMatrixFields(ACM);
     if(coorM instanceof LinearCoordinateMap) {
       String filename =((LinearCoordinateMap) coorM).getFullName();
       if(filename != null) mapFileTF.setText(filename);
     }
     else mapFileTF.setText("");
+  }
+  /**
+   * Gets an double value from the text values.
+   *
+   * @param xtext	text representing x value
+   * @return		xyz double value
+   */
+  public static Double getDoubleFromText(String text, double def) {
+    double d = def;
+    if("".equals(text)) d = 0;
+    else {
+      try {
+	d = Double.valueOf(text);
+      } catch (NumberFormatException e1) {
+	Toolkit.getDefaultToolkit().beep();
+      }
+    }
+    return(d);
   }
   /**
    * Gets an XYZDouble from the text values.
@@ -333,15 +432,100 @@ implements CNUFileObject, ActionListener, ItemListener {
     return xyznumber;
   }
   /**
+   * Gets the origin fields units.for the affine grid
+   * Should only be called from event dispatch thread.
+   *
+   * @return	origin fields units
+   */
+  private int getAffineOriginFieldsUnits() {
+    int units = CoordinateMap.METERS;
+    if("pixels".equals(affineOriginUnitsCH.getSelectedItem()))
+      units = CoordinateMap.PIXELS;
+    else if("millimeters".equals(affineOriginUnitsCH.getSelectedItem()))
+      units = CoordinateMap.MILLIMETERS;
+    return units;
+  }
+  /**
+   * Set the affine matrix fields.
+   * Should only be called from event dispatch thread.
+   *
+   * @param origin	value to set to
+   * @param units	units to display in
+   */
+  private void setAffineMatrixFields(AffineCoordinateMap ACM) {
+    if(ACM != null) {
+      for(int i=0; i<4; i++) {
+	for(int j=0; j<4; j++) {
+	  displayedTextValues[i][j] = Double.toString(ACM.getMatrixValue(i,j));
+	  affineTFarray[i][j].setText(displayedTextValues[i][j]);
+	}
+      }
+      switch(ACM.getShiftUnits()) {
+      case CoordinateMap.PIXELS:
+	displayedOriginUnits = CoordinateMap.PIXELS;
+	affineOriginUnitsCH.setSelectedItem("pixels");
+	break;
+      case CoordinateMap.MILLIMETERS:
+	displayedOriginUnits = CoordinateMap.MILLIMETERS;
+	affineOriginUnitsCH.setSelectedItem("millimeters");
+	break;
+      case CoordinateMap.METERS:
+      default:
+	displayedOriginUnits = CoordinateMap.METERS;
+	affineOriginUnitsCH.setSelectedItem("meters");
+	break;
+      }
+    }
+    else {
+      for(int i=0; i<4; i++) {
+	for(int j=0; j<4; j++) {
+	  displayedTextValues[i][j] = "";
+	  affineTFarray[i][j].setText("");
+	}
+      }
+      displayedAffineOriginUnits = CoordinateMap.METERS;
+      affineOriginUnitsCH.setSelectedItem("meters");
+    }
+    displayedACM = ACM;
+  }
+  /**
+   * Gets the affine coordinate map from the fields.
+   * Should only be called from event dispatch thread.
+   *
+   * @return	the coordinate map
+   */
+  private AffineCoordinateMap getAffineMapFromFields() {
+    boolean modified = false;;
+    double[][] matrix = new double[4][4];
+    int units = getAffineOriginFieldsUnits();
+    if(units != displayedAffineOriginUnits) modified = true;
+    for(int i=0; i<4; i++) {
+      for(int j=0; j<4; j++) {
+	double def = 0;
+	if(displayedACM != null) def = displayedACM.getMatrixValue(i,j);
+	String currentText = affineTFarray[i][j].getText().trim();
+	if(displayedTextValues[i][j].equals(currentText)) matrix[i][j] = def;
+	else {
+	  matrix[i][j] = getDoubleFromText(currentText, def);
+	  modified = true;
+	}
+      }
+    }
+    if(modified) return (new AffineCoordinateMap("affine editted", matrix, units));
+    else return(displayedACM);
+  }
+  /**
    * Gets the origin fields units.
    * Should only be called from event dispatch thread.
    *
    * @return	origin fields units
    */
   private int getOriginFieldsUnits() {
-    int units = CoordinateMap.METERS;
+    int units = CoordinateMap.METERS; // defaults to meters
     if("pixels".equals(originUnitsCH.getSelectedItem()))
       units = CoordinateMap.PIXELS;
+    else if("millimeters".equals(originUnitsCH.getSelectedItem()))
+      units = CoordinateMap.MILLIMETERS;
     return units;
   }
   /**
@@ -358,21 +542,22 @@ implements CNUFileObject, ActionListener, ItemListener {
       displayedOriginZText = "";
       displayedOrigin = null;
     }
-    else if(units == CoordinateMap.PIXELS) {
-      originUnitsCH.setSelectedItem("pixels");
+    else {
       displayedOriginXText = Double.toString(origin.x);
       displayedOriginYText = Double.toString(origin.y);
       displayedOriginZText = Double.toString(origin.z);
-      displayedOriginUnits = CoordinateMap.PIXELS;
       displayedOrigin = new XYZDouble(origin);
     }
-    else { // default to METERS
+    if(units == CoordinateMap.PIXELS) {
+      originUnitsCH.setSelectedItem("pixels");
+      displayedOriginUnits = CoordinateMap.PIXELS;
+    }
+    else if(units == CoordinateMap.PIXELS) {
       originUnitsCH.setSelectedItem("millimeters");
-      displayedOrigin = new XYZDouble(origin);
-      displayedOrigin.scale(1e3);  // convert to millimeters for display
-      displayedOriginXText = Double.toString(displayedOrigin.x);
-      displayedOriginYText = Double.toString(displayedOrigin.y);
-      displayedOriginZText = Double.toString(displayedOrigin.z);
+      displayedOriginUnits = CoordinateMap.MILLIMETERS;
+    }
+    else { // default to METERS
+      originUnitsCH.setSelectedItem("meters");
       displayedOriginUnits = CoordinateMap.METERS;
     }
     originXTF.setText(displayedOriginXText);
@@ -400,8 +585,8 @@ implements CNUFileObject, ActionListener, ItemListener {
     }
     // get values from strings
     origin = getXYZDouble(xtext, ytext, ztext, displayedOrigin);
-    if((origin != null) && (units == CoordinateMap.METERS))
-      origin.scale(1e-3); // convert to meters for return
+    //    if((origin != null) && (units == CoordinateMap.METERS))
+    //      origin.scale(1e-3); // convert to meters for return
     setOriginFields(origin, units);
     return origin;
   }
@@ -660,6 +845,29 @@ implements CNUFileObject, ActionListener, ItemListener {
       scaleZTF.setEditable(state);
       rotationXTF.setEditable(state); rotationYTF.setEditable(state);
       rotationZTF.setEditable(state);
+      rotationUnitsCH.setEnabled(state);
+    }
+  }
+  /**
+   * Enables or disables edits.
+   *
+   * @param state	<code>true</code> to enable edits
+   */
+  public void setEnableAffineEdits(final boolean state) {
+    if(! SwingUtilities.isEventDispatchThread()) {
+      SwingUtilities.invokeLater( new Runnable() {
+	public void run() { setEnableEdits(state); }
+      } );
+    }
+    else {
+      if(state != enableAffineEditsCB.isSelected()) enableEditsCB.setSelected(state);
+      acceptAffineB.setEnabled(state);
+      affineOriginUnitsCH.setEnabled(state);
+      for(int i=0; i<4; i++) {
+	for(int j=0; j<4; j++) {
+	  affineTFarray[i][j].setEditable(state);
+	}
+      }
     }
   }
   /**
@@ -672,6 +880,8 @@ implements CNUFileObject, ActionListener, ItemListener {
     try {
       if (e.getSource() == enableEditsCB)
 	setEnableEdits(enableEditsCB.isSelected());
+      else if (e.getSource() == enableAffineEditsCB)
+	setEnableAffineEdits(enableAffineEditsCB.isSelected());
       else if (e.getSource() == rotationUnitsCH) {
 	int newUnits = getRotationFieldsUnits();
 	if(newUnits != displayedRotationUnits)
@@ -768,6 +978,7 @@ implements CNUFileObject, ActionListener, ItemListener {
         setCoordinateMap(null);
       }
       else if (e.getSource() == acceptB) setCoordinateMap(getMapFromFields());
+      else if (e.getSource() == acceptAffineB) setCoordinateMap(getAffineMapFromFields());
       else if (e.getSource() == saveB) saveMapFile(getCoordinateMap());
       else if (e.getSource() == applyMapB) {
         LinearCoordinateMap.setDefaultCoordinateMap(getCoordinateMap());

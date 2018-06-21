@@ -183,8 +183,8 @@ public class CNUData {
    * Defaults to calling getCoordinateMap().
    * @param sliceViewMode	the slice orientation to display
    *				<code>CNUDimensions.TRANSVERSE</code>,
-   *				<code>CNUDimensions.CORONAL</code>, or
-   *				<code>CNUDimensions.SAGITTAL</code>
+   *				<code>CNUDimensions.CORONAL</code>,
+   *				<code>CNUDimensions.SAGITTAL</code>...
    * @param slice		the slice number in the range from 0 to
    *				the number of slices for the sliceViewMode
    * @param ivalue		the 4th or i dimension to use for displaying

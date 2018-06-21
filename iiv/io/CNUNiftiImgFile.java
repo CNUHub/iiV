@@ -101,7 +101,14 @@ public class CNUNiftiImgFile extends CNUImgFile {
     StringBuffer sb = new StringBuffer();
     sb.append(super.toString());
     if(nh != null) sb.append("\n").append(nh.toString());
-    if(coordinateMap != null) sb.append("\n").append(coordinateMap.toString());
+    if(coordinateMap != null) sb.append("Coordinate map utilized=\n").append(coordinateMap.toString());
+    // 12/28/2017 -- jtlee -- added to be able to compare q-form and s-form maps
+    if(nh != null) {
+      CoordinateMap coormap = nh.getQFormCoordinateMap();
+      if((coormap != null) && (coormap != coordinateMap)) sb.append("Coordinate map not utilized=\n").append(coormap.toString());
+      coormap = nh.getSFormCoordinateMap();
+      if((coormap != null) && (coormap != coordinateMap)) sb.append("Coordinate map not utilized=\n").append(coormap.toString());
+    }
     if(colorModel != null) sb.append("\n").append(colorModel.toString());
     return sb.toString();
   }

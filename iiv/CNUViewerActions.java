@@ -69,6 +69,7 @@ public class CNUViewerActions {
 
   public EasyAddAbstractAction orientationLabelsCheckboxAction;
   public EasyAddAbstractAction sliceLabelsCheckboxAction;
+  public EasyAddAbstractAction iValueLabelsCheckboxAction;
   public EasyAddAbstractAction applyLabelsAction;
 
   public EasyAddAbstractAction applyFlipsAction;
@@ -346,11 +347,15 @@ public class CNUViewerActions {
 
     orientationLabelsCheckboxAction = new LocalAction(
        "Orientation",
-       "Select to orientation labels on newly displayed slices",
+       "Select to display orientation labels on newly displayed slices",
        NOCMD);
     sliceLabelsCheckboxAction = new LocalAction(
        "Slice",
-       "Select to slice labels on newly displayed slices",
+       "Select to display slice labels on newly displayed slices",
+       NOCMD);
+    iValueLabelsCheckboxAction = new LocalAction(
+       "iValue",
+       "Select to display iValue labels on newly displayed slices",
        NOCMD);
     flipHCheckboxAction = new LocalAction("Horizontal",
       "Select to flip newly displayed slices horizontally", NOCMD);

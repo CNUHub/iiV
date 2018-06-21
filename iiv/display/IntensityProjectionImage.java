@@ -42,8 +42,8 @@ public class IntensityProjectionImage extends SingleImg implements CNUTypesConst
    * @param inImg		the data to retrieve image pixels from
    * @param sliceViewMode	the slice orientation to display
    *				<code>CNUDimensions.TRANSVERSE</code>,
-   *				<code>CNUDimensions.CORONAL</code>, or
-   *				<code>CNUDimensions.SAGITTAL</code>
+   *				<code>CNUDimensions.CORONAL</code>,
+   *				<code>CNUDimensions.SAGITTAL</code>,,,
    * @param firstslice		slice number in the range from 0 to
    *				the number of slices for the sliceViewMode.
    *                            Intensity projection includes values only from
@@ -67,8 +67,8 @@ public class IntensityProjectionImage extends SingleImg implements CNUTypesConst
    * @param inImg		the data to retrieve image pixels from
    * @param sliceViewMode	the slice orientation to display
    *				<code>CNUDimensions.TRANSVERSE</code>,
-   *				<code>CNUDimensions.CORONAL</code>, or
-   *				<code>CNUDimensions.SAGITTAL</code>
+   *				<code>CNUDimensions.CORONAL</code>,
+   *				<code>CNUDimensions.SAGITTAL</code>...
    * @param firstslice		slice number in the range from 0 to
    *				the number of slices for the sliceViewMode.
    *                            Intensity projection includes values only from

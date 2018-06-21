@@ -14,7 +14,14 @@ public class CNUDimensions implements iiVScriptable, Cloneable {
   public final static int TRANSVERSE = 0;
   public final static int CORONAL = 1;
   public final static int SAGITTAL = 2;
-  public final static int ORIENTATIONS[] = {TRANSVERSE, CORONAL, SAGITTAL};
+  public final static int XY_SLICE = 3;
+  public final static int XZ_SLICE = 4;
+  public final static int YZ_SLICE = 5;
+  public final static int YX_SLICE = 6;
+  public final static int ZX_SLICE = 7;
+  public final static int ZY_SLICE = 8;
+  public final static int ORIENTATIONS[] = {TRANSVERSE, CORONAL, SAGITTAL, XY_SLICE, XZ_SLICE, YZ_SLICE, YX_SLICE, ZX_SLICE, ZY_SLICE};
+  public final static String ORIENTATION_NAMES[] = {"transverse","coronal", "sagittal", "xy_slice", "xz_slice", "yz_slice", "yx_slice", "zx_slice", "zy_slice"};
 
   public final static int LEFT_POSITIVE = 1;
   public final static int RIGHT_POSITIVE = 2;
@@ -54,6 +61,7 @@ public class CNUDimensions implements iiVScriptable, Cloneable {
    */
   public synchronized String toString() {
     StringBuffer sb = new StringBuffer();
+    sb.append("*** class CNUDimensions\n");
     sb.append(super.toString()).append("\n");
     sb.append("dimensions=").append(CNUTypes.arrayToString(dimensions)).append("\n");
     sb.append("type=").append(CNUTypes.typeToString(type)).append("\n");
@@ -62,6 +70,7 @@ public class CNUDimensions implements iiVScriptable, Cloneable {
     sb.append("orientation=").append(orientationToString(orientation)).append("\n");
     sb.append("orientationOrder=").append(orientationOrderToString(orientationOrder)).append("\n");
     sb.append("spatialResolutions=").append(CNUTypes.arrayToString(spatialResolutions)).append("\n");
+    sb.append("*** end class CNUDimensions\n");
     return sb.toString();
   }
   /**
@@ -115,32 +124,24 @@ public class CNUDimensions implements iiVScriptable, Cloneable {
   /**
    * Creates a string representation for orientation values.
    *
-   * @param orientation	contains either TRANSVERSE, CORONAL or SAGITTAL
+   * @param orientation	contains either TRANSVERSE, CORONAL, SAGITTAL...
    */
   public final static String orientationToString( int orientation ) {
-    switch( orientation ) {
-    case TRANSVERSE:
-      return "transverse";
-    case CORONAL:
-      return "coronal";
-    case SAGITTAL:
-      return "sagittal";
-    default:
-      return "unknown";
-    }
+    if(orientation < 0 || orientation >= ORIENTATION_NAMES.length) return "unknown";
+    return(ORIENTATION_NAMES[orientation]);
   }
   /**
    * Gets the orientation value from a string representation ignoring case.
    *
    * @param orientationStr	string representation of orientation as created
    *			   	by orietationToString
-   * @return			either TRANSVERSE, CORONAL, SAGITTAL or UNKNOWN
+   * @return			either TRANSVERSE, CORONAL, SAGITTAL... or UNKNOWN
    */
   public final static int orientationValueOf( String orientationStr ) {
     orientationStr = orientationStr.trim();
-    if("transverse".equalsIgnoreCase(orientationStr)) return TRANSVERSE;
-    if("coronal".equalsIgnoreCase(orientationStr)) return CORONAL;
-    if("sagittal".equalsIgnoreCase(orientationStr)) return SAGITTAL;
+    for(int i=0; i<ORIENTATION_NAMES.length; i++) {
+      if(ORIENTATION_NAMES[i].equalsIgnoreCase(orientationStr)) return i;
+    }
     return UNKNOWN;
   }
   /**
@@ -489,7 +490,7 @@ public class CNUDimensions implements iiVScriptable, Cloneable {
   /**
    * Sets the orientation.
    *
-   * @param orientation	contains either TRANSVERSE, CORONAL or SAGITTAL
+   * @param orientation	contains either TRANSVERSE, CORONAL SAGITTAL...
    */
   public synchronized void setOrientation( int orientation ) {
     this.orientation = orientation;
@@ -497,7 +498,7 @@ public class CNUDimensions implements iiVScriptable, Cloneable {
   /**
    * Returns the orientation.
    *
-   * @return	either TRANSVERSE, CORONAL or SAGITTAL
+   * @return	either TRANSVERSE, CORONAL, SAGITTAL...
    */
   final public synchronized int getOrientation() { return orientation; }
   /**

@@ -51,6 +51,8 @@ public class NiftiSFormCoordinateMap extends AffineCoordinateMap {
 				 XYZDouble row_res,
 				 double units_to_meters, String name) {
     super(null);
+    // 12/28/2017 convert row_res units to meters. Was this always wrong? 
+    //this.row_res.setValues(row_res.x*units_to_meters, row_res.y*units_to_meters, row_res.z*units_to_meters);
     this.row_res.setValues(row_res);
     this.units_to_meters = units_to_meters;
     this.srow_x = new double[] {srow_x[0], srow_x[1], srow_x[2], srow_x[3]};
@@ -74,7 +76,12 @@ public class NiftiSFormCoordinateMap extends AffineCoordinateMap {
    */
   public String toString() {
     StringBuffer sb = new StringBuffer();
-    sb.append("*** class").append(getClass().getName()).append(" =\n");
+    String class_name=getClass().getName();
+    String super_class_name=getClass().getSuperclass().getName();
+    sb.append("*** class ").append(class_name).append(" ***\n");
+    sb.append("** super class ").append(super_class_name).append("\n");
+    sb.append(super.toString());
+    sb.append("** end super class ").append(super_class_name).append("\n");
     sb.append("name=").append(getName()).append("\n");
     sb.append("srow_x={");
     sb.append(srow_x[0]).append(",").append(srow_x[1]).append(",");
@@ -87,10 +94,11 @@ public class NiftiSFormCoordinateMap extends AffineCoordinateMap {
     sb.append(srow_z[2]).append(",").append(srow_z[3]).append("}\n");
     sb.append("row_res=").append(row_res.toString()).append("\n");
     sb.append("units_to_meters=").append(units_to_meters).append("\n");
-    sb.append(super.toString());
+    sb.append("*** end class ").append(class_name).append(" ***\n");
     return sb.toString();
   }
   /**
+
    * Creates a script that may be used to recreate this coordinate map.
    *
    * @param scriptedObjects scripted objects list to add this object to.
