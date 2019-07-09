@@ -444,12 +444,13 @@ public class IntensityProjectionImage extends SingleImg implements CNUTypesConst
     //    int[] sliceOrig = getSliceOrigin();
 
     int localslice = getSlice();
+    int localiValue = getIValue();
     synchronized (stateParameterLock) {
       if(planeIndices != null) localslice = planeIndices.getPixelAsInt(new int[] {pt.x, pt.y});
       //      int index = inDims.getIndex(sliceOrig) + pt.x * inInc[0] +
       //		  pt.y * inInc[1];
       //      return inDims.getPoint(index);
-      return getDataSlicer().getDataIndicesFromSlicePoint(pt, localslice);
+      return getDataSlicer().getDataIndicesFromSlicePoint(pt, localslice, localiValue);
     }
   }
  /**

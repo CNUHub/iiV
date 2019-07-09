@@ -1060,7 +1060,7 @@ implements ScaleInterface, CoordinateMappable, SliceNumbering,
    */
   public int[] getIndicesFromNonfilteredPoint(Point pt) {
     if(pt == null) return null;
-    return dataSlicer.getDataIndicesFromSlicePoint(pt, slice);
+    return dataSlicer.getDataIndicesFromSlicePoint(pt, getSlice(), getIValue());
   }
  /**
    * Gets the point relative to the non-filtered

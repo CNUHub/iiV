@@ -146,15 +146,15 @@ public class AffineDataSlicer implements CNUDataSlicer {
    *
    * @param pt	point to get indice for
    * @param slice slice the point is on
+   * @param iValue i dimension the point is on
    * @return	the indices to the data
    */
-  public int[] getDataIndicesFromSlicePoint(Point pt, int slice) {
+  public int[] getDataIndicesFromSlicePoint(Point pt, int slice, int iValue) {
     if(pt == null) return null;
 
     double[] sliceOrig = new double[reslicedDataDims.getNumberOfDimensions()];
     for(int i=0; i<sliceOrig.length; i++) sliceOrig[i] = 0;
     if(slice > 0) sliceOrig[sliceDim] = slice;
-
     sliceOrig[0] += reslicedOrig.x; sliceOrig[1] += reslicedOrig.y; sliceOrig[2] += reslicedOrig.z;
 
     // calc new inputstart
@@ -164,10 +164,12 @@ public class AffineDataSlicer implements CNUDataSlicer {
     xyzDindices.y += (inputxstep.y * pt.x) + (inputystep.y * pt.y);
     xyzDindices.z += (inputxstep.z * pt.x) + (inputystep.z * pt.y);
 
-    int[] indices = new int[3];
+    int[] indices = new int[4];
     indices[0] = (int) Math.round(xyzDindices.x);
     indices[1] = (int) Math.round(xyzDindices.y);
     indices[2] = (int) Math.round(xyzDindices.z);
+    if(iValue > 0) indices[3] = iValue;
+    else indices[3] = 0;
 
     return indices;
   }

@@ -41,9 +41,10 @@ public interface CNUDataSlicer {
    *
    * @param pt	point to get indice for
    * @param slice slice the point is on
+   * @param iValue i dimension the point is on
    * @return	the indices to the data
    */
-  public int[] getDataIndicesFromSlicePoint(Point pt, int slice);
+  public int[] getDataIndicesFromSlicePoint(Point pt, int slice, int iValue);
  /**
    * Gets the point relative to the resliced data given the indices
    * corresponding to the original data.

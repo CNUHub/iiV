@@ -95,13 +95,15 @@ public class PrimaryOrthoDataSlicer implements CNUDataSlicer {
    *
    * @param pt	point to get indice for
    * @param slice slice the point is on
+   * @param iValue i dimension the point is on
    * @return	the indices to the data
    */
-  public int[] getDataIndicesFromSlicePoint(Point pt, int slice) {
+  public int[] getDataIndicesFromSlicePoint(Point pt, int slice, int iValue) {
     if(pt == null) return null;
     int[] sliceOrig = new int[dims.getNumberOfDimensions()];
     for(int i=0; i<sliceOrig.length; i++) sliceOrig[i] = 0;
     sliceOrig[sliceDim] = slice;
+    if(sliceOrig.length > 3 && iValue > 0) sliceOrig[3] = iValue;
     int index = dims.getIndex(sliceOrig) + pt.x * inc[0] + pt.y * inc[1];
     return dims.getPoint(index);
   }
